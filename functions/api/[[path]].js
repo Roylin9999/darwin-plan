@@ -20,7 +20,7 @@
  *   SITE_URL                  選填，日誌網址，會附在提醒訊息最後
  */
 
-const PERSONA = '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教，不用條列。';
+const PERSONA = '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。你用第一人稱說話，稱呼使用者為「主人」，絕對不要把使用者叫成達爾文。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教，不用條列。';
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
@@ -64,22 +64,24 @@ function buildMessage(S, kind, env) {
   const tail = (daysLeft !== null ? `\n距離 ${md(meta.deadline)} 還有 ${daysLeft} 天` : '') + (env.SITE_URL ? `\n\n打開日誌 ${env.SITE_URL}` : '');
   const list = a => a.map(t => '・' + t.t).join('\n');
 
-  if (kind === 'am') {
-    const head = `🐾 達爾文早安！\n${name}，今天是計劃第 ${dayNo} 天` + (w ? `（第 ${w.n} 週・${w.phase}）` : '');
+  // am＝早上提醒；now＝在 LINE 輸入「今天」時的回覆（不分早晚）
+  if (kind === 'am' || kind === 'now') {
+    const hello = kind === 'am' ? `🐾 ${name}早安！我是達爾文` : `🐾 ${name}，達爾文來報告`;
+    const head = `${hello}\n今天是計劃第 ${dayNo} 天` + (w ? `（第 ${w.n} 週・${w.phase}）` : '');
     const body = tasks.length ? `今天要做的事：\n${list(left.length ? left : tasks)}` : '今天還沒寫任務，打開日誌填一件最小的事吧。';
     return `${head}\n\n${body}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}`;
   }
   if (kind === 'pm') {
-    if (!tasks.length) return `🐾 達爾文晚安\n今天還沒有紀錄，睡前寫下一件明天要做的事就好。${tail}`;
-    if (!left.length) return `🐾 達爾文晚安\n今天 ${tasks.length} 件事全部完成！${name}太棒了，記得回日誌打卡分享。${tail}`;
-    return `🐾 達爾文晚安\n今天完成 ${done.length} / ${tasks.length}，還有：\n${list(left)}\n\n做完記得回日誌蓋貓掌。${tail}`;
+    if (!tasks.length) return `🐾 ${name}晚安，我是達爾文\n今天還沒有紀錄，睡前寫下一件明天要做的事就好。${tail}`;
+    if (!left.length) return `🐾 ${name}晚安，我是達爾文\n今天 ${tasks.length} 件事全部完成！太棒了，記得回日誌打卡分享。${tail}`;
+    return `🐾 ${name}晚安，我是達爾文\n今天完成 ${done.length} / ${tasks.length}，還有：\n${list(left)}\n\n做完記得回日誌蓋貓掌。${tail}`;
   }
   if (kind === 'week' && w) {
     let all = 0, ok = 0;
     for (const k of Object.keys(S.days || {})) if (k >= w.s && k <= w.e) { const t = S.days[k].tasks || []; all += t.length; ok += t.filter(x => x.d).length; }
     const flags = (S.weeks && S.weeks[w.n]) || [], actsLeft = (w.acts || []).filter((_, i) => !flags[i]);
     const next = weeks.find(x => x.n === w.n + 1);
-    return `🐾 第 ${w.n} 週回顧\n每日任務完成 ${ok} / ${all}\n` +
+    return `🐾 ${name}，第 ${w.n} 週回顧來了\n每日任務完成 ${ok} / ${all}\n` +
       (actsLeft.length ? `本週重點還沒勾的：\n${actsLeft.map(a => '・' + a).join('\n')}` : '本週重點全部完成！') +
       (next ? `\n\n下週（${next.phase}）里程碑：${next.target}` : '') + tail;
   }
@@ -124,7 +126,7 @@ async function lineWebhook(request, env) {
       if (uid !== bound) { await lineReply(env, ev.replyToken, '請先輸入：綁定 加上你的通關碼，我才知道你是誰。'); continue; }
       const st = await loadState(env), S = st && st.data;
       if (!S) { await lineReply(env, ev.replyToken, '還沒有紀錄，先打開日誌看看吧。' + (env.SITE_URL ? '\n' + env.SITE_URL : '')); continue; }
-      if (/^(今天|任務|進度)/.test(text)) { await lineReply(env, ev.replyToken, buildMessage(S, 'am', env)); continue; }
+      if (/^(今天|任務|進度)/.test(text)) { await lineReply(env, ev.replyToken, buildMessage(S, 'now', env)); continue; }
       if (/^(本週|這週|回顧)/.test(text)) { await lineReply(env, ev.replyToken, buildMessage(S, 'week', env) || '這週沒有計劃內容。'); continue; }
       let reply = '';
       if (env.MINIMAX_API_KEY) {
@@ -208,7 +210,7 @@ export async function onRequest({ request, env, params }) {
       const st = await loadState(env), to = await kvGet(env, 'line_user');
       if (!to) return json({ ok: false, error: '還沒綁定 LINE：請在官方帳號輸入「綁定 通關碼」。' });
       if (!st || !st.data) return json({ ok: false, error: '雲端還沒有紀錄，先在日誌勾一件事再試。' });
-      await linePush(env, to, [buildMessage(st.data, 'am', env)]);
+      await linePush(env, to, [buildMessage(st.data, 'now', env)]);
       return json({ ok: true });
     }
     return json({ error: 'not found' }, 404);

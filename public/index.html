@@ -579,7 +579,7 @@ const CONFIG = {
      金鑰請放在中繼端，不要寫在這個檔案裡。 */
   ai: {
     endpoint: '',
-    persona: '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教。',
+    persona: '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。你用第一人稱說話，稱呼使用者為「主人」。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教。',
   },
   /* Level Up 晉升路線（活動到 2027/2/5）。comm＝這一階領到的 MPCP 佣金，bonus＝Level Up 晉升獎金 */
   levelUp: {
@@ -821,7 +821,7 @@ function renderLine(){
   $('lineAm').value = L.am; $('linePm').value = L.pm;
   const list = left.length ? left.map(t=>'・'+t.t).join('\n') : '・今天還沒寫任務，打開日誌填一件吧';
   $('linePrev').textContent = L.on
-    ? `🐾 達爾文 ${L.am} 來報到\n${CONFIG.name}早安！今天是挑戰第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 2/5 還有 ${$('daysLeft').textContent} 天`
+    ? `🐾 ${CONFIG.name}早安！我是達爾文\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 2/5 還有 ${$('daysLeft').textContent} 天`
     : '提醒已關閉，達爾文先去睡覺了。';
 }
 
