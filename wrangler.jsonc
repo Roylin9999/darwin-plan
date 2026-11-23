@@ -1,0 +1,15 @@
+{
+  "name": "darwin-plan",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "triggers": { "crons": ["*/30 * * * *"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "darwin-db",
+      // ↓↓↓ 把這一行換成你的 D1 資料庫 ID（在 D1 的 darwin-db 頁面可以複製）
+      "database_id": "請貼上你的D1資料庫ID"
+    }
+  ]
+}

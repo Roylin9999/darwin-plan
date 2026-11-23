@@ -164,7 +164,7 @@ async function aiReply(request, env) {
 }
 
 /* ---------- 定時提醒 ---------- */
-async function runCron(env) {
+export async function runCron(env) {
   const st = await loadState(env), S = st && st.data, to = await kvGet(env, 'line_user'), now = taipeiNow();
   if (!S || !to) return { sent: 0, reason: !S ? 'no state' : 'no line user' };
   const L = S.line || {};
