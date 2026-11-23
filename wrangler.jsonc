@@ -9,7 +9,7 @@
       "binding": "DB",
       "database_name": "darwin-db",
       // ↓↓↓ 把這一行換成你的 D1 資料庫 ID（在 D1 的 darwin-db 頁面可以複製）
-      "database_id": "請貼上你的D1資料庫ID"
+      "database_id": "30dcef0c-611b-44fd-84ed-ab0479c34dca"
     }
   ]
 }
