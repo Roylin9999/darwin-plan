@@ -108,10 +108,17 @@ async function verifyLine(env, raw, signature) {
   return btoa(bin) === signature;
 }
 
-async function lineWebhook(request, env) {
+async function lineWebhook(request, env, waitUntil) {
   const raw = await request.text();
   if (!(await verifyLine(env, raw, request.headers.get('x-line-signature')))) return json({ error: 'signature' }, 401);
   const events = (JSON.parse(raw).events) || [];
+  // 先回 200 給 LINE，再在背景處理：AI 回覆比較慢，等太久 LINE 會先斷線
+  const work = handleLineEvents(events, env);
+  if (waitUntil) waitUntil(work); else await work;
+  return json({ ok: true });
+}
+
+async function handleLineEvents(events, env) {
   for (const ev of events) {
     if (ev.type !== 'message' || !ev.message || ev.message.type !== 'text' || !ev.source || !ev.source.userId) continue;
     const text = ev.message.text.trim(), uid = ev.source.userId, bound = await kvGet(env, 'line_user');
@@ -130,12 +137,12 @@ async function lineWebhook(request, env) {
       if (/^(本週|這週|回顧)/.test(text)) { await lineReply(env, ev.replyToken, buildMessage(S, 'week', env) || '這週沒有計劃內容。'); continue; }
       let reply = '';
       if (env.MINIMAX_API_KEY) {
-        try { reply = await minimax(env, PERSONA, `使用者在 LINE 說：「${text}」\n今天的任務狀況：\n${buildMessage(S, 'pm', env)}`); } catch (e) { reply = ''; }
+        try { reply = await minimax(env, PERSONA, `主人在 LINE 說：「${text}」\n今天的任務狀況：\n${buildMessage(S, 'pm', env)}`); }
+        catch (e) { console.log('minimax error', e.message); reply = ''; }
       }
       await lineReply(env, ev.replyToken, reply || '🐾 我在！輸入「今天」看今天的任務，輸入「本週」看這週回顧。');
     } catch (e) { console.log('line event error', e.message); }
   }
-  return json({ ok: true });
 }
 
 /* ---------- MiniMax（OpenAI 相容的 chat/completions） ---------- */
@@ -143,6 +150,7 @@ async function minimax(env, system, user) {
   const base = (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1').replace(/\/+$/, '');
   const r = await fetch(base + '/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(25000),          // 最多等 25 秒
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.MINIMAX_API_KEY },
     body: JSON.stringify({
       model: env.MINIMAX_MODEL || 'MiniMax-M3',
@@ -184,11 +192,11 @@ export async function runCron(env) {
 }
 
 /* ---------- 路由 ---------- */
-export async function onRequest({ request, env, params }) {
+export async function onRequest({ request, env, params, waitUntil }) {
   const path = [].concat(params.path || []).join('/'), method = request.method;
   try {
     if (path === 'ping') return json({ ok: true });
-    if (path === 'line/webhook' && method === 'POST') return lineWebhook(request, env);
+    if (path === 'line/webhook' && method === 'POST') return lineWebhook(request, env, waitUntil);
     if (path === 'cron') {
       const k = new URL(request.url).searchParams.get('key');
       if (!env.CRON_KEY || k !== env.CRON_KEY) return json({ error: 'key' }, 401);
@@ -206,6 +214,13 @@ export async function onRequest({ request, env, params }) {
       return json({ ok: true });
     }
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
+    if (path === 'ai/test' && method === 'POST') {       // 測試 MiniMax 連線，回傳成功或錯誤原因
+      const info = { base: (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1'), model: env.MINIMAX_MODEL || 'MiniMax-M3', hasKey: !!env.MINIMAX_API_KEY };
+      if (!info.hasKey) return json({ ok: false, error: '還沒設定 MINIMAX_API_KEY', ...info });
+      const t0 = Date.now();
+      try { const reply = await minimax(env, PERSONA, '主人剛完成今天的第一件任務，請說一句話鼓勵他。'); return json({ ok: !!reply, reply, error: reply ? undefined : '有連上，但回覆是空的', ms: Date.now() - t0, ...info }); }
+      catch (e) { return json({ ok: false, error: e.message, ms: Date.now() - t0, ...info }); }
+    }
     if (path === 'line/test' && method === 'POST') {
       const st = await loadState(env), to = await kvGet(env, 'line_user');
       if (!to) return json({ ok: false, error: '還沒綁定 LINE：請在官方帳號輸入「綁定 通關碼」。' });

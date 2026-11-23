@@ -405,6 +405,7 @@ body.lock{overflow:hidden}
       </div>
     </section>
     <button class="sharebtn" id="lineTest" hidden>傳一則測試訊息到 LINE</button>
+    <button class="sharebtn" id="aiTest" hidden style="background:var(--pink)">測試 AI 連線</button>
     <p class="share-hint" id="lineMsg" style="text-align:left"></p>
     <div class="foot">
       <span id="footNote">紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。</span>
@@ -662,6 +663,7 @@ function cloudPush(){
 function cloudUI(msg){
   document.getElementById('lineTag').textContent = CLOUD ? '雲端已連線' : '尚未連線';
   document.getElementById('lineTest').hidden = !CLOUD;
+  document.getElementById('aiTest').hidden = !CLOUD;
   document.getElementById('footNote').textContent = msg || (CLOUD ? '紀錄已同步到雲端，換裝置也看得到。' : '紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。');
 }
 async function cloudPull(){
@@ -1074,6 +1076,10 @@ $('codeForm').addEventListener('submit', async e => { e.preventDefault();
   $('codeErr').textContent = ''; try { await cloudPull(); } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; } });
 $('lineTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = '傳送中…';
   try { const j = await (await api('line/test', {method:'POST'})).json(); $('lineMsg').textContent = j.ok ? '已傳送，請看 LINE。' : (j.error || '傳送失敗。'); }
+  catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
+$('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = 'AI 測試中，最多等 25 秒…';
+  try { const j = await (await api('ai/test', {method:'POST'})).json();
+    $('lineMsg').textContent = j.ok ? `AI 正常（${(j.ms/1000).toFixed(1)} 秒，${j.model}）：${j.reply}` : `AI 沒接上：${j.error || '未知錯誤'}（網址 ${j.base || '?'}，模型 ${j.model || '?'}）`; }
   catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
 warmDays();
 render();
