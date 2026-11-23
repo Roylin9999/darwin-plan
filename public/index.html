@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>達爾文豪宅計劃</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Chiron+GoRound+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* 版面：貼紙風。桌機左欄固定顯示總目標，右欄是週與日；手機單欄往下排。 */
+:root{
+  color-scheme: light;
+  --bg:#FFF3C9;          /* 奶油黃底 */
+  --paper:#FFFFFF;
+  --ink:#4A2C1A;         /* 達爾文的描邊棕 */
+  --ink-soft:#8C6B55;
+  --orange:#F47A1F;      /* 花圈橘 */
+  --orange-soft:#FFDDB8;
+  --green:#86B544;       /* 眼睛綠＝完成 */
+  --green-soft:#E4F2C6;
+  --pink:#F59C96;        /* 耳朵粉 */
+  --pink-soft:#FFE4E0;
+  --sky:#C9ECF5;
+  --line:#06C755;
+  --display:"Baloo 2","Chiron GoRound TC",system-ui,sans-serif;
+  --body:"Chiron GoRound TC","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --r:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);
+  background-image:radial-gradient(circle at 12px 12px, #FFE49B 3px, transparent 3.5px);
+  background-size:36px 36px;
+  color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.55;
+  -webkit-text-size-adjust:100%;
+}
+img{max-width:100%;display:block}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+
+.wrap{max-width:880px;margin:0 auto;padding:16px 16px 140px;display:grid;gap:16px}
+@media (min-width:900px){.wrap{padding-top:26px}}
+[hidden]{display:none!important}
+.page{display:grid;gap:16px;min-width:0}
+@media (min-width:820px){.page.two{grid-template-columns:1fr 1fr;align-items:start}}
+
+/* 三層進度：每一頁都看得到 */
+.glance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.g{display:flex;align-items:center;gap:10px;background:var(--paper);border:3px solid var(--ink);border-radius:18px;
+  box-shadow:0 5px 0 var(--ink);padding:8px 10px;text-align:left;min-width:0}
+.g-ring{--p:0%;--c:var(--green);flex:none;width:52px;height:52px;border-radius:50%;border:2.5px solid var(--ink);
+  background:conic-gradient(var(--c) var(--p), #F6ECDF 0);display:grid;place-items:center}
+.g-ring b{width:34px;height:34px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);display:grid;place-items:center;
+  font-family:var(--display);font-size:13px;line-height:1}
+.g span{font-size:13px;font-weight:700;line-height:1.3;min-width:0}
+.g span small{display:block;font-size:11px;color:var(--ink-soft);font-weight:500}
+.g.cur{background:var(--orange-soft)}
+@media (max-width:520px){.g{flex-direction:column;gap:4px;text-align:center;padding:8px 4px}.g span small{display:none}}
+
+/* 下方分頁選單 */
+.tabs{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(520px,calc(100% - 24px));z-index:20;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px;background:var(--paper);
+  border:3px solid var(--ink);border-radius:26px;box-shadow:0 6px 0 var(--ink)}
+.tab{border:2.5px solid transparent;background:transparent;border-radius:18px;padding:4px 0 3px;font-size:12px;font-weight:700;color:var(--ink-soft);
+  display:grid;justify-items:center;gap:0;min-width:0}
+.tab img{height:50px;width:auto;max-width:100%;object-fit:contain;transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.tab[aria-current=page]{background:var(--orange-soft);border-color:var(--ink);color:var(--ink)}
+.tab[aria-current=page] img{transform:translateY(-8px) scale(1.18)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;font-weight:700;font-size:14px}
+.chip.on{background:var(--orange);color:#fff}
+.addbtn{border:3px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font-weight:700;padding:5px 16px;box-shadow:0 4px 0 var(--ink)}
+.plist{display:grid;gap:10px;margin-top:14px}
+@media (min-width:760px){.plist{grid-template-columns:1fr 1fr}}
+.person{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;border:2.5px solid var(--ink);border-radius:16px;background:#FFFDF4;padding:10px 12px;min-width:0}
+.person h3{font-size:17px}
+.person h3 small{font-size:13px;font-weight:500;color:var(--ink-soft)}
+.person .meta{grid-column:1/-1;font-size:13px;font-weight:700;color:var(--ink-soft)}
+.person .memo{grid-column:1/-1;font-size:13px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.st{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;align-self:start;white-space:nowrap}
+.st.s0{background:var(--sky)} .st.s1{background:var(--orange-soft)} .st.s2{background:var(--green-soft)} .st.s3{background:#EFE7DF}
+.empty{display:flex;align-items:center;gap:12px;font-weight:700;color:var(--ink-soft);padding:8px 0}
+.empty img{width:90px}
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(74,44,26,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(640px,100%);max-height:90%;overflow-y:auto;background:var(--paper);border:3px solid var(--ink);border-bottom:0;
+  border-radius:26px 26px 0 0;padding:16px 16px 24px;display:grid;gap:12px}
+@media (min-width:700px){.sheet-bg{align-items:center}.sheet{border-bottom:3px solid var(--ink);border-radius:26px;box-shadow:0 6px 0 var(--ink)}}
+.sheet{grid-template-columns:minmax(0,1fr);overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+.sheet .field,.sheet .f2>*{min-width:0}
+.sheet input,.sheet select,.sheet textarea{min-width:0;max-width:100%}
+.sheet input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-height:47px}
+body.lock{overflow:hidden}
+/* 達爾文 AI 回應 */
+.ai{display:flex;gap:10px;align-items:flex-start;background:var(--pink-soft);border:3px solid var(--ink);border-radius:18px;padding:10px 12px;margin-top:14px}
+.ai>img{width:56px;flex:none}
+.ai .who{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.ai p{margin:0 0 6px;overflow-wrap:anywhere}
+.ai.pop{animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.ai button{border:2.5px solid var(--ink);border-radius:999px;background:#fff;font-size:13px;font-weight:700;padding:3px 12px}
+@keyframes pop{from{transform:scale(.96)}to{transform:none}}
+.sharebtn{border:3px solid var(--ink);border-radius:999px;background:var(--orange);color:#fff;font-weight:700;font-size:14px;
+  padding:4px 14px;box-shadow:0 4px 0 var(--ink);margin-top:10px}
+.cond .sharebtn{grid-column:1/-1;justify-self:start;margin-top:4px}
+#shareImg{width:min(100%,360px);margin:0 auto;border:3px solid var(--ink);border-radius:16px;background:#fff;aspect-ratio:4/5}
+.share-hint{margin:0;font-size:13px;color:var(--ink-soft);text-align:center}
+.sheet-top{display:flex;justify-content:space-between;align-items:center}
+.sheet-top h2{font-size:20px}
+.sheet-top button{width:36px;height:36px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;font-size:18px;line-height:1}
+.grp{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--orange);border-bottom:2px dotted #E8D9C8;padding-bottom:2px;margin-top:4px}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field select{width:100%;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:9px 10px}
+.field .lab{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+.sheet-act{display:flex;gap:10px;margin-top:6px}
+.sheet-act button{border:3px solid var(--ink);border-radius:16px;font-weight:700;padding:10px 16px;background:#fff}
+.sheet-act .save{flex:1;background:var(--green);color:#fff;box-shadow:0 4px 0 var(--ink)}
+.sheet-act .kill{background:var(--pink-soft)}
+.wknav{display:flex;align-items:center;gap:8px}
+.wknav button{width:34px;height:34px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;font-weight:700;line-height:1}
+.wknav button:disabled{opacity:.35;cursor:default}
+
+.card{background:var(--paper);border:3px solid var(--ink);border-radius:var(--r);
+  box-shadow:0 6px 0 var(--ink);padding:18px;min-width:0}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--ink-soft)}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.sec-head h2{font-size:22px}
+
+/* ---------- 總目標 ---------- */
+.hero{background:var(--sky);padding:12px 16px}
+.hero-top{display:flex;gap:12px;align-items:center}
+  .hero-top img{width:78px;flex:none;animation:bob 3.2s ease-in-out infinite}
+.hero h1{font-size:25px}
+.hero .sub{font-size:14px;color:var(--ink-soft);margin-top:2px}
+.count{display:inline-flex;align-items:baseline;gap:6px;margin-top:8px;background:var(--paper);
+  border:2.5px solid var(--ink);border-radius:999px;padding:2px 14px;font-weight:700;font-size:14px}
+.count b{font-family:var(--display);font-size:24px;color:var(--orange);line-height:1.2}
+
+.total{background:var(--sky)}
+/* Level Up 晉升路線 */
+.lv{margin-top:12px;background:var(--paper);border:3px solid var(--ink);border-radius:18px;padding:10px}
+.lv-steps{display:flex;align-items:stretch;gap:4px}
+.lv-step{flex:1;min-width:0;border:2.5px dashed var(--ink-soft);border-radius:14px;background:#fff;padding:6px 4px;text-align:center;display:grid;gap:1px;align-content:start}
+.lv-step b{font-size:16px}
+.lv-step span{font-size:12px;font-weight:700;color:var(--ink-soft);line-height:1.35}
+.lv-step.on{border-style:solid;border-color:var(--ink);background:var(--green-soft)}
+.lv-step.next{border-style:solid;border-color:var(--ink);background:var(--orange-soft)}
+.lv-arrow{align-self:center;font-family:var(--display);font-size:22px;color:var(--ink-soft)}
+.lv-sum{display:flex;align-items:center;gap:10px;margin-top:8px}
+.lv-sum img{width:54px;flex:none}
+.lv-sum p{margin:0;font-size:13px;font-weight:700;line-height:1.45;min-width:0}
+.lv-sum p b{display:block;font-family:var(--display);font-size:28px;color:var(--orange);line-height:1.1;white-space:nowrap}
+.lv-sum small{display:block;font-weight:500;color:var(--ink-soft);font-size:12px}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.total-row .big{font-family:var(--display);font-weight:800;font-size:54px;line-height:1;color:var(--orange)}
+.total-row .big small{font-size:24px}
+.pace{flex:none;white-space:nowrap;font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px;border:2px solid var(--ink)}
+.pace.ok{background:var(--green-soft)} .pace.slow{background:var(--pink-soft)}
+.road{position:relative;margin:70px 6px 64px}
+.mk{position:absolute;top:-5px;transform:translateX(-50%);display:grid;justify-items:center;pointer-events:none}
+.mk::before{content:"";width:3px;height:32px;background:var(--ink);border-radius:2px}
+.mk b{margin-top:3px;font-family:var(--display);font-size:12px;line-height:1.25;white-space:nowrap;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:0 5px;color:var(--ink-soft)}
+.mk small{font-size:10px;font-weight:700;color:var(--ink-soft);line-height:1.3}
+.mk.on b{background:var(--orange);color:#fff}
+.mk.last{transform:translateX(-100%);justify-items:end}
+.road-bar{height:22px;border:3px solid var(--ink);border-radius:999px;background:#FFF;overflow:hidden}
+.road-fill{height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--orange) 0 12px,#FF9A47 12px 24px);
+  border-right:3px solid var(--ink);transition:width .6s cubic-bezier(.3,1.4,.5,1)}
+.road-cat{position:absolute;bottom:16px;left:0;width:64px;transform:translateX(-50%) scaleX(-1);transition:left .6s cubic-bezier(.3,1.4,.5,1);pointer-events:none}
+.road-today{position:absolute;top:-5px;bottom:-5px;width:0;border-left:3px dashed var(--ink)}
+.road-today span{position:absolute;top:68px;left:0;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.road-goal{position:absolute;right:-6px;bottom:22px;font-size:12px;font-weight:700;background:var(--green);color:#fff;
+  border:2.5px solid var(--ink);border-radius:8px 8px 8px 0;padding:1px 7px}
+
+.conds{display:grid;gap:10px}
+.cond{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;
+  border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px;background:#FFFDF4}
+.cond.done{background:var(--green-soft)}
+.cond h3{font-size:15px}
+.cond .val{font-family:var(--display);font-weight:800;font-size:20px;white-space:nowrap}
+.cond .val small{font-size:13px;color:var(--ink-soft);font-weight:600}
+.cond .hint{font-size:12px;color:var(--ink-soft);grid-column:1/-1}
+.mini{grid-column:1/-1;height:12px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--green);transition:width .4s}
+.paws{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.paw{width:46px;height:46px;border-radius:50%;border:2.5px dashed var(--ink-soft);background:#fff;padding:7px;
+  display:grid;place-items:center;transition:transform .15s}
+.paw svg{width:100%;height:100%;fill:#E9DCCF}
+.paw.on{border-style:solid;border-color:var(--ink);background:var(--orange-soft);transform:rotate(-8deg)}
+.paw.on svg{fill:var(--orange)}
+.paw:active{transform:scale(.9)}
+
+/* ---------- 週 ---------- */
+.weeks{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.wk{flex:none;scroll-snap-align:center;width:54px;border:2.5px solid var(--ink);border-radius:14px;background:#fff;
+  padding:5px 0 6px;text-align:center;position:relative}
+.wk b{display:block;font-family:var(--display);font-size:20px;line-height:1.1}
+.wk span{font-size:11px;color:var(--ink-soft);font-weight:700}
+.wk i{display:block;height:5px;margin:4px 8px 0;border-radius:9px;background:#EEE3D6;overflow:hidden}
+.wk i u{display:block;height:100%;background:var(--green)}
+.wk.now{background:var(--orange-soft)}
+.wk.sel{background:var(--orange);color:#fff;box-shadow:0 4px 0 var(--ink);transform:translateY(-3px)}
+.wk.sel span{color:#fff}
+.wk.past{opacity:.75}
+.week-body{display:grid;gap:14px}
+@media (min-width:620px){.week-body{grid-template-columns:150px 1fr;align-items:center}}
+.ring{position:relative;width:132px;margin:0 auto}
+.ring svg{display:block;width:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:13}
+.ring .bg{stroke:#F3E8DA} .ring .fg{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset .5s}
+.ring .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .mid b{font-family:var(--display);font-size:34px;font-weight:800;line-height:1}
+.ring .mid span{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.phase{display:inline-block;font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;background:var(--pink-soft)}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:2px dotted #E8D9C8}
+.chk:last-child{border-bottom:0}
+.box{flex:none;width:28px;height:28px;border:2.5px solid var(--ink);border-radius:9px;background:#fff;padding:3px;display:grid;place-items:center}
+.box svg{width:100%;height:100%;fill:transparent}
+.box.on{background:var(--green)} .box.on svg{fill:#fff}
+.chk .txt{flex:1;min-width:0;padding-top:1px}
+.chk.on .txt{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--green);text-decoration-thickness:2px}
+.bvgoal{margin-top:10px;font-size:14px;background:#FFFDF4;border:2.5px solid var(--ink);border-radius:14px;padding:8px 12px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* ---------- 日 ---------- */
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.dy{border:2.5px solid var(--ink);border-radius:14px;background:#fff;padding:5px 0 6px;text-align:center;min-width:0}
+.dy span{display:block;font-size:11px;font-weight:700;color:var(--ink-soft)}
+.dy b{display:block;font-family:var(--display);font-size:19px;line-height:1.15}
+.dy i{display:block;width:16px;height:16px;margin:2px auto 0;border-radius:50%;border:2px solid var(--ink);
+  background:conic-gradient(var(--green) var(--p,0%), #fff 0)}
+.dy.today{background:var(--sky)}
+.dy.sel{background:var(--orange);color:#fff;box-shadow:0 4px 0 var(--ink);transform:translateY(-3px)}
+.dy.sel span{color:#fff}
+.day-head{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.day-head img{width:74px;flex:none}
+.day-head h3{font-size:19px}
+.daybar{height:20px;border:3px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;margin-top:6px}
+.daybar i{display:block;height:100%;background:var(--green);border-right:3px solid var(--ink);transition:width .45s cubic-bezier(.3,1.4,.5,1)}
+.daybar i[style*="width:0"]{border-right:0}
+.daymeta{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.task{display:flex;gap:10px;align-items:center;padding:6px 0}
+.task .tt{flex:1;min-width:0;border:0;border-bottom:2.5px dashed #D9C6B2;background:transparent;padding:6px 2px;border-radius:0;resize:none;overflow:hidden;line-height:1.4;field-sizing:content;display:block}
+.task .tt:focus{outline:0;border-bottom-color:var(--orange);border-bottom-style:solid}
+.task.on input[type=text]{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--green)}
+.task .del{flex:none;width:30px;height:30px;border:0;background:transparent;color:var(--ink-soft);font-size:20px;border-radius:50%}
+.task .del:hover{background:var(--pink-soft)}
+.task.blank .box{border-style:dashed;border-color:var(--ink-soft)}
+.fields{display:grid;gap:12px;margin-top:14px}
+@media (min-width:620px){.fields{grid-template-columns:170px 1fr}}
+.field label{display:block;font-size:13px;font-weight:700;margin-bottom:4px}
+.field input,.field textarea{width:100%;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:9px 12px}
+.field textarea{min-height:46px;resize:vertical}
+.cheer{display:none;margin-top:14px;align-items:center;gap:12px;background:var(--green-soft);border:3px solid var(--ink);border-radius:18px;padding:8px 14px;font-weight:700}
+.cheer img{width:70px;animation:wig 1.2s ease-in-out infinite}
+.cheer.show{display:flex}
+
+/* ---------- LINE ---------- */
+.line{background:#F2FBF4}
+.line-grid{display:grid;gap:14px}
+@media (min-width:620px){.line-grid{grid-template-columns:1fr 1fr}}
+.tag{font-size:12px;font-weight:700;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:1px 10px}
+.set{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:2px dotted #CFE5D3}
+.set select{border:2.5px solid var(--ink);border-radius:12px;background:#fff;padding:5px 8px}
+.sw{position:relative;width:54px;height:30px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;flex:none;padding:0}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:var(--ink);transition:left .2s}
+.sw[aria-checked=true]{background:var(--line)} .sw[aria-checked=true]::after{left:26px;background:#fff}
+.bubble{background:#8CABD9;border:3px solid var(--ink);border-radius:18px;padding:14px 12px;display:flex;gap:8px;align-items:flex-start}
+.bubble img{width:40px;height:40px;object-fit:cover;object-position:top;border-radius:50%;background:#fff;border:2px solid var(--ink);flex:none}
+.bubble p{margin:0;background:#fff;border-radius:4px 16px 16px 16px;padding:9px 12px;font-size:14px;white-space:pre-wrap;min-width:0;overflow-wrap:anywhere}
+
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft)}
+.foot button{border:2px solid var(--ink-soft);background:transparent;border-radius:999px;padding:3px 12px;font-size:13px}
+@keyframes bob{50%{transform:translateY(-5px) rotate(2deg)}}
+@keyframes wig{50%{transform:rotate(-7deg) scale(1.05)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:380px){.card{padding:14px}.hero h1{font-size:22px}.total-row .big{font-size:46px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="paw" viewBox="0 0 32 32"><ellipse cx="16" cy="21" rx="8" ry="6.5"/><ellipse cx="6" cy="13" rx="3.2" ry="4.2"/><ellipse cx="12.3" cy="7.5" rx="3.3" ry="4.4"/><ellipse cx="19.7" cy="7.5" rx="3.3" ry="4.4"/><ellipse cx="26" cy="13" rx="3.2" ry="4.2"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="card hero">
+    <div class="hero-top">
+      <img src="img/flower.png" alt="戴著橘色花圈的達爾文">
+      <div>
+        <div class="eyebrow" style="font-family:var(--display);font-size:17px;letter-spacing:.04em;color:var(--orange)">Level Up</div>
+        <h1>達爾文豪宅計劃</h1>
+        <div class="count">距離 2/5 還有 <b id="daysLeft">0</b> 天</div>
+      </div>
+    </div>
+    <div class="lv" aria-label="Level Up 晉升路線">
+      <div class="lv-steps" id="lvSteps"></div>
+      <div class="lv-sum"><img src="img/cat-jump.png" alt=""><p id="lvSum"></p></div>
+      <button class="sharebtn" id="shareLv" hidden>晉升了，打卡分享</button>
+    </div>
+  </header>
+
+  <div class="glance" aria-label="三層進度">
+    <button class="g" data-go="day"><i class="g-ring" id="gDay"><b></b></i><span>今日<small>今天的任務</small></span></button>
+    <button class="g" data-go="week"><i class="g-ring" id="gWeek" style="--c:var(--pink)"><b></b></i><span>本週<small id="gWeekN"></small></span></button>
+    <button class="g" data-go="goal"><i class="g-ring" id="gGoal" style="--c:var(--orange)"><b></b></i><span>總目標<small>Level Up</small></span></button>
+  </div>
+
+  <div class="page" data-page="day">
+    <section class="card" aria-label="每日任務">
+      <div class="sec-head"><h2>日計劃</h2><div class="wknav"><button data-wk="-1" id="wkPrev" aria-label="上一週">‹</button><span class="eyebrow" id="weekRange"></span><button data-wk="1" id="wkNext" aria-label="下一週">›</button></div></div>
+      <div class="days" id="days"></div>
+      <div class="day-head">
+        <img id="dayCat" src="img/cat-stretch.png" alt="">
+        <div style="flex:1;min-width:0">
+          <h3 id="dayTitle"></h3>
+          <div class="daymeta" id="dayMeta"></div>
+          <div class="daybar"><i id="dayBar" style="width:0"></i></div>
+          <button class="sharebtn" id="shareDay" hidden>打卡分享</button>
+        </div>
+      </div>
+      <div id="tasks"></div>
+      <div class="fields">
+        <div class="field"><label for="dayBv">今天新增的 BV</label><input id="dayBv" type="number" inputmode="numeric" min="0" placeholder="0"></div>
+        <div class="field"><label for="dayNote">今天的小筆記</label><textarea id="dayNote" placeholder="今天最開心的一件事、明天想聯絡的人…"></textarea></div>
+      </div>
+      <div class="ai" id="aiDay"><img src="img/cat-wave.png" alt="">
+        <div><div class="who">達爾文說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
+      <div class="cheer" id="cheer"><img src="img/cat-belly.png" alt=""><span>今天全部完成！達爾文開心到翻肚。</span></div>
+    </section>
+  </div>
+  <div class="page" data-page="week" hidden>
+    <section class="card" aria-label="本週目標">
+      <div class="sec-head"><h2>週目標</h2><span class="eyebrow">共 18 週，點一下切換</span></div>
+      <div class="weeks" id="weeks"></div>
+      <div class="week-body">
+        <div class="ring">
+          <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="50"/><circle class="fg" id="weekRing" cx="60" cy="60" r="50" stroke-dasharray="314.16" stroke-dashoffset="314.16"/></svg>
+          <div class="mid"><b class="num" id="weekPct">0%</b><span>本週完成</span></div>
+        </div>
+        <div>
+          <span class="phase" id="weekPhase"></span>
+          <h3 id="weekTitle" style="font-size:19px;margin:6px 0 4px"></h3>
+          <div id="weekActions"></div>
+          <div class="bvgoal"><span>本週里程碑</span><b class="num" id="weekBv"></b></div>
+          <button class="sharebtn" id="shareWeek" hidden>本週達成，打卡分享</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="page" data-page="list" hidden>
+    <section class="card" aria-label="名單">
+      <div class="sec-head"><h2>名單</h2><button class="addbtn" id="pAdd">＋ 新增</button></div>
+      <div class="chips" id="pFilters"></div>
+      <div class="ai" id="aiList"><img src="img/cat-read.png" alt="">
+        <div><div class="who">達爾文說</div><p id="aiListText"></p></div></div>
+      <div class="plist" id="pList"></div>
+    </section>
+  </div>
+  <div class="page two" data-page="goal" hidden>
+    <section class="card total" aria-label="總目標">
+        <div class="total-row">
+          <div><div class="eyebrow" id="luChq">Level Up 完成度</div><div class="big num"><span id="totalPct">0</span><small>%</small></div></div>
+          <span class="pace" id="pace"></span>
+        </div>
+        <div class="road">
+          <div class="road-bar"><div class="road-fill" id="roadFill"></div></div>
+          <div id="roadMarks"></div>
+          <div class="road-today" id="roadToday"><span>今天</span></div>
+          <img class="road-cat" id="roadCat" src="img/cat-walk.png" alt="">
+          <div class="road-goal">經理級</div>
+        </div>
+      </section>
+    <section class="card" aria-label="Level Up 主目標">
+      <div class="sec-head"><h2>Level Up 主目標</h2><span class="eyebrow" id="luCount"></span></div>
+      <div class="conds">
+        <div class="conds" id="luConds"></div>
+        <div class="cond" id="luLeftBox"><h3>左邊 BV</h3>
+          <div class="val num"><span id="luLeftVal">0</span> <small>/ 5,000</small></div>
+          <div class="mini"><i id="luLeftBar" style="width:0"></i></div>
+          <div class="hint" id="luLeftHint"></div>
+          <div class="field" style="grid-column:1/-1;margin-top:4px"><label for="luLeft">每週五結算後，填入後台的左邊 BV</label><input id="luLeft" type="number" inputmode="decimal" min="0" step="0.5"></div>
+        </div>
+      </div>
+    </section>
+    <section class="card" aria-label="營養挑戰獎">
+      <div class="sec-head"><h2>營養挑戰獎 <small style="font-size:13px;color:var(--ink-soft)">輔助目標・3/31</small></h2><span class="eyebrow" id="condCount"></span></div>
+      <div class="conds" id="conds"></div>
+    </section>
+  </div>
+  <div class="page" data-page="line" hidden>
+    <section class="card line" aria-label="LINE 提醒">
+      <div class="sec-head"><h2>LINE 提醒</h2><span class="tag" id="lineTag">尚未連線</span></div>
+      <div class="line-grid">
+        <div>
+          <div class="set"><label for="lineOn" id="lineOnL">開啟每日提醒</label><button class="sw" id="lineOn" role="switch" aria-labelledby="lineOnL" aria-checked="true"></button></div>
+          <div class="set"><label for="lineAm">早上：今天的任務</label><select id="lineAm"></select></div>
+          <div class="set"><label for="linePm">晚上：還沒完成的事</label><select id="linePm"></select></div>
+          <div class="set" style="border:0"><label for="lineWk">每週日：下週預告與本週回顧</label><button class="sw" id="lineWk" role="switch" aria-label="每週回顧" aria-checked="true"></button></div>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">訊息預覽</div>
+          <div class="bubble"><img src="img/head.png" alt=""><p id="linePrev"></p></div>
+        </div>
+      </div>
+    </section>
+    <button class="sharebtn" id="lineTest" hidden>傳一則測試訊息到 LINE</button>
+    <p class="share-hint" id="lineMsg" style="text-align:left"></p>
+    <div class="foot">
+      <span id="footNote">紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。</span>
+      <button id="reset">清空範例與紀錄</button>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" aria-label="分頁選單">
+  <button class="tab" data-go="day"><img src="img/nav-day.png" alt="">日計劃</button>
+  <button class="tab" data-go="week"><img src="img/nav-week.png" alt="">週目標</button>
+  <button class="tab" data-go="list"><img src="img/nav-list.png" alt="">名單</button>
+  <button class="tab" data-go="goal"><img src="img/nav-goal.png" alt="">總目標</button>
+  <button class="tab" data-go="line"><img src="img/nav-line.png" alt="">提醒</button>
+</nav>
+
+<div class="sheet-bg" id="sheet" hidden>
+  <form class="sheet" id="pForm" autocomplete="off">
+    <div class="sheet-top"><h2 id="pTitle">新增聯絡人</h2><button type="button" id="pClose" aria-label="關閉">×</button></div>
+    <div class="grp">基本資料</div>
+    <div class="f2">
+      <div class="field"><label for="pName">姓名 *</label><input id="pName" required placeholder="王小明"></div>
+      <div class="field"><label for="pSex">性別</label><select id="pSex"><option value="">不填</option><option>女</option><option>男</option></select></div>
+      <div class="field"><label for="pAge">年齡</label><input id="pAge" type="number" inputmode="numeric" min="0" placeholder="35"></div>
+      <div class="field"><label for="pCity">居住地點</label><input id="pCity" placeholder="台北市"></div>
+    </div>
+    <div class="grp">關係與背景</div>
+    <div class="field"><span class="lab">關係程度</span><div class="chips" data-g="rel"></div></div>
+    <div class="f2">
+      <div class="field"><label for="pFamily">家庭狀況</label><select id="pFamily"></select></div>
+      <div class="field"><label for="pJob">職業工作</label><input id="pJob" placeholder="業務、老師…"></div>
+    </div>
+    <div class="field"><label for="pFun">休閒娛樂</label><input id="pFun" placeholder="運動、旅遊、追劇…"></div>
+    <div class="grp">財務與健康</div>
+    <div class="f2">
+      <div class="field"><label for="pMoney">財務狀況</label><select id="pMoney"></select></div>
+      <div class="field"><label for="pHealth">健康狀況</label><select id="pHealth"></select></div>
+    </div>
+    <div class="field"><label for="pDream">未來夢想／目標</label><input id="pDream" placeholder="想創業、想買房、想多陪家人…"></div>
+    <div class="grp">跟進狀態</div>
+    <div class="field"><span class="lab">狀態</span><div class="chips" data-g="status"></div></div>
+    <div class="field"><span class="lab">左／右邊</span><div class="chips" data-g="side"></div></div>
+    <div class="f2">
+      <div class="field"><label for="pContact">聯絡方式</label><input id="pContact" placeholder="LINE／電話"></div>
+      <div class="field"><label for="pDate">會面日期</label><input id="pDate" type="date"></div>
+    </div>
+    <div class="grp">備註</div>
+    <div class="field"><textarea id="pNote" aria-label="備註" style="min-height:90px" placeholder="個性、背景故事、上次談話重點、對方的顧慮…"></textarea></div>
+    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="submit" class="save">儲存</button></div>
+  </form>
+</div>
+
+<div class="sheet-bg" id="codeBg" hidden>
+  <form class="sheet" id="codeForm" autocomplete="off">
+    <div class="sheet-top"><h2>輸入通關碼</h2></div>
+    <p class="share-hint" style="text-align:left">輸入一次後，這台裝置就會記住，紀錄會同步到雲端。</p>
+    <div class="field"><label for="codeIn">通關碼</label><input id="codeIn" type="password" required></div>
+    <p class="share-hint" id="codeErr" style="text-align:left;color:#C0392B"></p>
+    <div class="sheet-act"><button type="submit" class="save">進入</button></div>
+  </form>
+</div>
+
+<div class="sheet-bg" id="shareBg" hidden>
+  <div class="sheet">
+    <div class="sheet-top"><h2>打卡分享</h2><button type="button" id="shareClose" aria-label="關閉">×</button></div>
+    <img id="shareImg" alt="打卡分享圖">
+    <div class="chips" id="shareStyles" style="justify-content:center"></div>
+    <p class="share-hint" id="shareHint">長按圖片就能儲存，或直接分享到 LINE 群組。</p>
+    <div class="sheet-act" id="shareAct" hidden><button type="button" class="save" id="shareGo">分享到 LINE 或其他 App</button></div>
+  </div>
+</div>
+
+<script>
+/* ============ 可調整設定 ============ */
+const CONFIG = {
+  name: '怡婷',
+  start: [2026, 11, 23],
+  end:   [2027, 3, 31],
+  bvTarget: 3000,
+  counters: [   // 用貓掌蓋章的條件
+    {id:'ufo',  title:'親自推薦新合格 UFO', target:2, hint:'需設定自動購貨才算合格'},
+    {id:'tix',  title:'購買年會門票',       target:3, hint:'記得記下門票號碼'},
+    {id:'mufo', title:'達成 MUFO',          target:1, hint:'2026 Q4 或 2027 Q1 至少一次'},
+    {id:'gmtss',title:'出席 GMTSS 產品訓練', target:2, hint:'記下訓練日期'},
+  ],
+  /* 主目標：Level Up（2/5 前升經理級）。週次 1–11 是 Level Up，12–18 是營養挑戰獎收尾 */
+  main: {
+    deadline: [2027, 2, 5],
+    leftTarget: 5000,
+    leftStart: 294.5,                 // 近 12 個月報表的左邊 BV，請依後台實際累積更新
+    tiers: [1200, 2400, 3600, 5000],
+    items: [
+      {id:'recL',   title:'左邊親推 1 位',  hint:'入會並設定超連鎖事業自動購貨'},
+      {id:'recR',   title:'右邊親推 1 位',  hint:'入會並設定超連鎖事業自動購貨'},
+      {id:'expand', title:'完成擴展業務',   hint:'左右兩位都上完新超連鎖店主訓練（NUOT）'},
+    ],
+  },
+  phases: [[1,2,'準備與邀約'],[3,5,'雙邊親推・擴展業務'],[6,9,'衝階晉升'],[10,11,'備用與確認'],[12,18,'營養挑戰獎收尾']],
+  /* 每週里程碑（顯示在週目標頁） */
+  weekTarget: ['左邊 BV 400','左邊 BV 600','左邊 BV 900','左邊 BV 1,100','過 1,200 階・助理級','左邊 BV 2,000','過 2,400 階','過 3,600 階','過 5,000 階・經理級','備用週','2/5 截止',
+    '營養 BV 2,000','營養 BV 2,300','營養 BV 2,700','營養 BV 3,000','五項條件確認','整理文件','3/31 提交'],
+  actions: [
+    ['進後台確認左右 BV 的實際累積數字','列出 20 人名單，標出左邊、右邊各 5 位優先','確認成功五要訣評量已完成','之後自己和顧客的訂單都放左邊（002）'],
+    ['完成 6 個邀約、3 場產品分享','進行 2 場事業說明（UBP）','購買第 1 張年會門票'],
+    ['左邊親推第 1 位入會並設定自動購貨','確認 12/8 自動購貨正常出貨','參加第 1 場 GMTSS 產品訓練'],
+    ['右邊親推第 1 位入會並設定自動購貨','幫兩位新夥伴報名新超連鎖店主訓練（NUOT）','購買第 2 張年會門票','左邊 BV 先停在 1,200 以下'],
+    ['兩位新夥伴上完 NUOT，完成擴展業務','確認這一季的 1000 表格已交','12/25 前繳超連鎖管理系統（UFMS）','左邊過 1,200 階，晉升助理級'],
+    ['左邊 BV 累積到 2,000','陪兩位新夥伴各開發 2 位顧客'],
+    ['左邊過 2,400 階','購買第 3 張年會門票'],
+    ['左邊過 3,600 階','參加第 2 場 GMTSS 產品訓練'],
+    ['左邊過 5,000 階，晉升經理級','確認右邊同一週也在 5,000 以上'],
+    ['備用週：還沒過階就補足差額','確認佣金已入帳、沒有被扣'],
+    ['2/5 前確認兩筆 Level Up 獎金資格','晉升打卡分享到群組'],
+    ['盤點營養挑戰獎五項條件的進度','確認兩位新夥伴的自動購貨持續中'],
+    ['檢視 MUFO 是否已達成（Q4 或 Q1）','還沒達成就加速 BV 與推薦'],
+    ['營養產品 BV 累積到 2,700','記錄所有訂單、UFO ID 與門票號碼'],
+    ['營養產品 BV 突破 3,000','盤點五項條件'],
+    ['逐項確認五項條件都已完成'],
+    ['填寫挑戰賽完成表格','整理所有證明文件'],
+    ['3/31 前提交完整申請文件'],
+  ],
+  /* 每天要做的事：依階段（同 phases 順序）和星期（一到日）自動帶入，使用者可以自己增刪 */
+  daily: [
+    [ // 準備與邀約
+      ['進後台看左右 BV，更新「左邊 BV」','在名單新增 3 位想邀約的人','傳訊息關心 2 位名單上的朋友'],
+      ['邀約 1 位朋友本週見面','分享 1 則產品或生活動態','整理 1 個自己的產品見證'],
+      ['進行 1 場產品分享或健康測驗','跟進昨天聯絡的人','更新名單上每個人的狀態'],
+      ['邀約 1 位朋友聽事業說明（UBP）','傳訊息關心 2 位顧客'],
+      ['結算前確認本週訂單都放在左邊（002）','進行 1 場一對一分享'],
+      ['帶 1 位朋友參加聚會或線上說明會','跟進本週見過面的人'],
+      ['回顧本週，勾選週目標','排好下週 3 個邀約','和上線對一次進度'],
+    ],
+    [ // 雙邊親推・擴展業務
+      ['進後台看左右 BV，更新「左邊 BV」','挑出最有機會加入的 3 位，各排一個行動'],
+      ['請上線協助，和準夥伴二對一','跟進 1 位還在考慮的朋友'],
+      ['陪新夥伴完成入會和自動購貨設定','進行 1 場產品分享'],
+      ['幫新夥伴報名新超連鎖店主訓練（NUOT）','關心 2 位顧客的回購'],
+      ['結算前確認左邊 BV 的位置','陪新夥伴列出他的名單'],
+      ['陪新夥伴參加訓練或聚會','跟進本週見過面的人'],
+      ['回顧本週，勾選週目標','排好下週 3 個邀約','和上線對一次進度'],
+    ],
+    [ // 衝階晉升
+      ['更新「左邊 BV」，算出離下一階還差多少','聯絡 3 位顧客確認本週訂單'],
+      ['進行 1 場營養產品分享（訂單放左邊）','陪左邊新夥伴做 1 場分享'],
+      ['跟進還在考慮的顧客','協助新夥伴開發 2 位顧客'],
+      ['確認本週訂單都在週五前下單、放在左邊','關心 2 位顧客的回購'],
+      ['週五結算：確認左邊有沒有過階','記下這週的佣金和獎金'],
+      ['陪新夥伴參加聚會','把本週成果打卡分享到群組'],
+      ['回顧本週，勾選週目標','排好下週的分享和訂單','和上線對一次進度'],
+    ],
+    [ // 備用與確認
+      ['更新「左邊 BV」，確認是否已到 5,000','還差的話，列出可以補上的訂單'],
+      ['聯絡 3 位顧客補足差額','陪新夥伴跟進他的名單'],
+      ['確認佣金不會被扣：1000 表格、自動購貨、UFMS','進行 1 場產品分享'],
+      ['週五前完成所有下單','關心 2 位顧客的回購'],
+      ['週五結算：確認晉升結果','記下佣金和 Level Up 獎金'],
+      ['把晉升成果打卡分享到群組','陪新夥伴參加聚會'],
+      ['回顧本週，勾選週目標','和上線對一次進度'],
+    ],
+    [ // 營養挑戰獎收尾
+      ['更新今天新增的營養產品 BV','聯絡 2 位顧客的回購'],
+      ['進行 1 場營養產品分享'],
+      ['確認兩位新夥伴的自動購貨正常','陪新夥伴做 1 場分享'],
+      ['整理訂單號碼、門票號碼、訓練日期'],
+      ['檢查 MUFO 進度'],
+      ['參加或回看 GMTSS 產品訓練'],
+      ['回顧本週，勾選週目標','排好下週的分享'],
+    ],
+  ],
+  /* AI 回應：endpoint 留空時用內建的回應句。
+     之後填上自己的中繼網址（例如 Cloudflare Worker），由它帶著 MiniMax 金鑰去呼叫 API。
+     金鑰請放在中繼端，不要寫在這個檔案裡。 */
+  ai: {
+    endpoint: '',
+    persona: '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教。',
+  },
+  /* Level Up 晉升路線（活動到 2027/2/5）。comm＝這一階領到的 MPCP 佣金，bonus＝Level Up 晉升獎金 */
+  levelUp: {
+    until: '2027/2/5',
+    steps: [
+      {name:'店主',   comm:0,     bonus:0,     how:'現在'},
+      {name:'助理級', comm:9500,  bonus:9500,  how:'過 1,200 階'},
+      {name:'經理級', comm:38000, bonus:19000, how:'過 2,400、3,600、5,000 階'},
+    ],
+  },
+  /* 打卡分享圖：五種樣式，圖片尺寸 1080 × 1350（4:5）。
+     bg 留空時用程式畫的底圖；之後把生成的背景放進 img/ 並填上檔名（例如 'img/share1.png'）就會換成你的圖。 */
+  share: [
+    {name:'橘花慶典', bg:'', color:'#F47A1F', mark:'#FF9A47', accent:'#F47A1F', cat:'flower', layout:'A', pattern:'dots'},
+    {name:'藍天翻肚', bg:'', color:'#BFE6F2', mark:'#FFFFFF', accent:'#2F8FB3', cat:'play',   layout:'A', pattern:'cloud'},
+    {name:'奶油貓掌', bg:'', color:'#FFE9A8', mark:'#FFD56B', accent:'#F47A1F', cat:'cat-cheer', layout:'B', pattern:'paw'},
+    {name:'抹茶獎狀', bg:'', color:'#DDEFC0', mark:'#C6E29C', accent:'#5E8F2A', cat:'head',   layout:'B', pattern:'stripe'},
+    {name:'粉紅泡泡', bg:'', color:'#FFD3CE', mark:'#FFFFFF', accent:'#E0655C', cat:'cat-wave', layout:'A', pattern:'bubble'},
+  ],
+  /* 名單表單的選項 */
+  people: {
+    status: ['潛在','邀約中','已加入','暫緩'],
+    rel:    ['熟識','普通','陌生','線上'],
+    side:   ['左邊','右邊','未定'],
+    family: ['單身','交往中','已婚','已婚有小孩','其他'],
+    money:  ['穩定','普通','有壓力'],
+    health: ['良好','普通','想調整'],
+  },
+};
+const STORE_KEY = 'darwin-challenge-v2';
+/* ==================================== */
+
+const D = a => new Date(a[0], a[1]-1, a[2]);
+const START = D(CONFIG.start), END = D(CONFIG.end), MAIN_END = D(CONFIG.main.deadline), DAY = 864e5;
+const key = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const md = d => (d.getMonth()+1)+'/'+d.getDate();
+const add = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const WD = ['日','一','二','三','四','五','六'];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+const WEEKS = CONFIG.actions.map((acts,i) => {
+  const s = add(START, i*7), e = i === CONFIG.actions.length-1 ? END : add(s, 6);
+  const days = []; for (let d = s; d <= e; d = add(d,1)) days.push(d);
+  const pi = CONFIG.phases.findIndex(p => i+1>=p[0] && i+1<=p[1]);
+  return {n:i+1, s, e, days, acts, bv:CONFIG.weekTarget[i], pi, phase:CONFIG.phases[pi][2]};
+});
+let now = new Date(); now = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const TODAY = now < START ? START : now > END ? END : now;
+const weekOf = d => WEEKS.find(w => d >= w.s && d <= w.e);
+
+function seed(){
+  let people = [];
+  try { people = (JSON.parse(localStorage.getItem('darwin-challenge-v1'))||{}).people || []; } catch(e){}
+  return {people, cond:{}, weeks:{}, days:{}, lu:{left:CONFIG.main.leftStart}, line:{on:true, am:'08:00', pm:'21:00', wk:true}};
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(STORE_KEY)); } catch(e){}
+if (!S || !S.days) S = seed();
+if (!S.people) S.people = [];
+if (!S.lu) S.lu = {left:CONFIG.main.leftStart};
+/* 存檔：先存在這台裝置，連上雲端時再同步。meta 是給 LINE 提醒用的計劃摘要 */
+const save = () => {
+  S.updated = Date.now();
+  S.meta = {name: CONFIG.name, start: key(START), deadline: key(MAIN_END),
+    weeks: WEEKS.map(w => ({n:w.n, s:key(w.s), e:key(w.e), phase:w.phase, target:w.bv, acts:w.acts}))};
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
+  cloudPush();
+};
+
+/* ---------- 雲端同步（部署到 Cloudflare 後自動啟用；在預覽頁會安靜略過） ---------- */
+let CLOUD = false, pushTimer = null;
+const codeGet = () => { try { return localStorage.getItem('darwin-code') || ''; } catch(e){ return ''; } };
+const api = (path, opt = {}) => fetch('api/' + path, {...opt, headers: {'content-type':'application/json', 'x-code': codeGet()}});
+function cloudPush(){
+  if (!CLOUD) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated||0})}).catch(()=>{}); }, 800);
+}
+function cloudUI(msg){
+  document.getElementById('lineTag').textContent = CLOUD ? '雲端已連線' : '尚未連線';
+  document.getElementById('lineTest').hidden = !CLOUD;
+  document.getElementById('footNote').textContent = msg || (CLOUD ? '紀錄已同步到雲端，換裝置也看得到。' : '紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。');
+}
+async function cloudPull(){
+  const r = await api('state');
+  if (r.status === 401){ document.getElementById('codeBg').hidden = false; if (codeGet()) document.getElementById('codeErr').textContent = '通關碼不對，請再試一次。'; return false; }
+  const j = await r.json();
+  if (j.data && (j.updated||0) > (S.updated||0)){
+    S = j.data; if (!S.people) S.people = []; if (!S.lu) S.lu = {left:CONFIG.main.leftStart}; if (!S.line) S.line = {on:true, am:'08:00', pm:'21:00', wk:true};
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
+    warmDays(); render(); darwin('hello'); darwin('listHello', {}, 'List');
+  } else if (S.updated) cloudPush();
+  document.getElementById('codeBg').hidden = true; cloudUI(); return true;
+}
+async function cloudInit(){
+  try {
+    const j = await (await fetch('api/ping')).json();
+    if (!j.ok) return;
+    CLOUD = true; if (!CONFIG.ai.endpoint) CONFIG.ai.endpoint = 'api/ai';
+    cloudUI();
+    if (!codeGet()) document.getElementById('codeBg').hidden = false; else await cloudPull();
+  } catch(e){ /* 沒有後端：維持單機模式 */ }
+}
+
+let selWeek = weekOf(TODAY), selDay = TODAY;
+/* 第一次打開某一天，就依階段和星期帶入預設任務 */
+const preset = d => { const w = weekOf(d); return w ? (CONFIG.daily[w.pi][(d.getDay()+6)%7] || []).map(t => ({t, d:false})) : []; };
+const dayRec = d => S.days[key(d)] || (S.days[key(d)] = {tasks:preset(d), bv:0, note:''});
+const peek = dayRec;
+/* 先把未來兩週的每日任務準備好，LINE 提醒才讀得到 */
+const warmDays = () => { for (let i = 0; i < 14; i++){ const d = add(TODAY, i); if (d <= END) dayRec(d); } };
+const dayPct = d => { const t = peek(d).tasks; return t.length ? t.filter(x=>x.d).length / t.length : 0; };
+const weekPct = w => {
+  const a = S.weeks[w.n] || [];
+  let done = w.acts.filter((_,i)=>a[i]).length, all = w.acts.length;
+  w.days.forEach(d => { const t = peek(d).tasks; all += t.length; done += t.filter(x=>x.d).length; });
+  return all ? done/all : 0;
+};
+const bvTotal = () => Object.values(S.days).reduce((n,r) => n + (+r.bv||0), 0);
+const $ = id => document.getElementById(id);
+const PAW = '<svg aria-hidden="true"><use href="#paw"/></svg>';
+
+const wan = n => { const w = Math.floor(n/1e4), q = Math.floor(n%1e4/1e3), h = n%1e3/100; return (w?w+'萬':'')+(q?q+'千':'')+(h||'') || '0'; };
+const lvNow = () => !S.lu.expand ? 0 : (+S.lu.left||0) >= CONFIG.main.leftTarget ? 2 : (+S.lu.left||0) >= CONFIG.main.tiers[0] ? 1 : 0;
+function renderLevel(){
+  const L = CONFIG.levelUp, lv = lvNow();
+  $('lvSteps').innerHTML = L.steps.map((x,i) => (i?'<span class="lv-arrow">›</span>':'') +
+    `<div class="lv-step ${i<=lv?'on':i===lv+1?'next':''}"><b>${x.name}</b>` +
+    (i ? `<span>佣金 ${wan(x.comm)}</span><span>獎金 ${wan(x.bonus)}</span>` : `<span>${x.how}</span><span>起點</span>`) + `</div>`).join('');
+  const comm = L.steps.reduce((a,x)=>a+x.comm,0), bonus = L.steps.reduce((a,x)=>a+x.bonus,0);
+  const got = L.steps.slice(0,lv+1).reduce((a,x)=>a+x.comm+x.bonus,0);
+  $('lvSum').innerHTML = `${L.until} 前升到${L.steps[L.steps.length-1].name}，共可領 <b>${wan(comm+bonus)}</b><small>佣金 ${wan(comm)} ＋ Level Up 獎金 ${wan(bonus)}${got?`　已入袋 ${wan(got)}`:''}</small>`;
+  $('shareLv').hidden = lv < 1;
+}
+function render(){
+  renderLevel();
+  /* --- 總目標 --- */
+  const bv = bvTotal();
+  const parts = [clamp01(bv/CONFIG.bvTarget), ...CONFIG.counters.map(c => clamp01((S.cond[c.id]||0)/c.target))];
+  /* 主目標 Level Up：三個條件各佔一份，左邊 BV 佔三份 */
+  const M = CONFIG.main, left = +S.lu.left || 0, done3 = M.items.filter(x => S.lu[x.id]).length;
+  const total = (done3 + clamp01(left/M.leftTarget)*3) / 6;
+  const timeP = clamp01((TODAY-START)/(MAIN_END-START));
+  $('luConds').innerHTML = M.items.map(x => `<div class="cond ${S.lu[x.id]?'done':''}"><h3>${x.title}</h3><div class="val num">${S.lu[x.id]?1:0} <small>/ 1</small></div>
+    <div class="paws"><button class="paw ${S.lu[x.id]?'on':''}" data-lu="${x.id}" aria-label="${x.title}${S.lu[x.id]?'，已完成':''}">${PAW}</button></div><div class="hint">${x.hint}</div></div>`).join('');
+  const nextT = M.tiers.find(t => left < t);
+  $('luCount').textContent = `已完成 ${done3 + (left>=M.leftTarget?1:0)} / 4`;
+  $('luLeftVal').textContent = left.toLocaleString(); $('luLeftBar').style.width = clamp01(left/M.leftTarget)*100+'%';
+  $('luLeftBox').classList.toggle('done', left >= M.leftTarget);
+  $('luLeftHint').textContent = nextT ? `離 ${nextT.toLocaleString()} 階還差 ${(nextT-left).toLocaleString()}　階梯：${M.tiers.map(t=>t.toLocaleString()).join('、')}` : '左邊已過 5,000 階！';
+  if (document.activeElement !== $('luLeft')) $('luLeft').value = left || '';
+  $('totalPct').textContent = Math.round(total*100);
+  $('daysLeft').textContent = Math.max(0, Math.round((MAIN_END-TODAY)/DAY));
+  /* 跑道＝左邊 BV，每過一階領一筆 9,500（5,000 階領兩筆） */
+  const bvP = clamp01(left/M.leftTarget)*100, got = M.tiers.reduce((n,t,i) => n + (left>=t ? (i===M.tiers.length-1?2:1) : 0), 0);
+  $('roadFill').style.width = bvP+'%';
+  $('roadCat').style.left = 'clamp(20px, '+bvP+'%, calc(100% - 20px))';
+  $('roadMarks').innerHTML = M.tiers.map((t,i) => { const last = i===M.tiers.length-1;
+    return `<span class="mk ${left>=t?'on':''} ${last?'last':''}" style="left:${t/M.leftTarget*100}%"><b>9千5${last?'×2':''}</b><small>${t.toLocaleString()}</small></span>`; }).join('');
+  $('luChq').textContent = `Level Up 完成度　9千5 已達成 ${got} / 5 筆` + (got && !S.lu.expand ? '（完成擴展業務後領取）' : '');
+  $('roadToday').style.left = (timeP*100)+'%';
+  const ahead = total >= timeP - 0.02;
+  $('pace').textContent = ahead ? '進度跟上了' : '比時間慢一點，加油';
+  $('pace').className = 'pace ' + (ahead ? 'ok' : 'slow');
+  const tw = weekOf(TODAY);
+  [['gDay',dayPct(TODAY)],['gWeek',weekPct(tw)],['gGoal',total]].forEach(([id,v]) => {
+    $(id).style.setProperty('--p', (v*100)+'%'); $(id).firstChild.textContent = Math.round(v*100)+'%'; });
+  $('gWeekN').textContent = '第 '+tw.n+' 週';
+  $('wkPrev').disabled = selWeek.n===1; $('wkNext').disabled = selWeek.n===WEEKS.length;
+  $('condCount').textContent = '已完成 ' + parts.filter(p=>p>=1).length + ' / 5';
+
+  let h = `<div class="cond ${parts[0]>=1?'done':''}"><h3>健康與營養產品 BV</h3>
+    <div class="val num">${bv.toLocaleString()} <small>/ ${CONFIG.bvTarget.toLocaleString()}</small></div>
+    <div class="mini"><i style="width:${parts[0]*100}%"></i></div>
+    <div class="hint">由每日紀錄的 BV 自動加總</div>${parts[0]>=1?'<button class="sharebtn" data-sc="bv">打卡分享</button>':''}</div>`;
+  CONFIG.counters.forEach((c,ci) => {
+    const v = S.cond[c.id]||0;
+    h += `<div class="cond ${v>=c.target?'done':''}"><h3>${c.title}</h3>
+      <div class="val num">${v} <small>/ ${c.target}</small></div>
+      <div class="paws">` + Array.from({length:c.target},(_,i)=>
+        `<button class="paw ${i<v?'on':''}" data-c="${c.id}" data-i="${i}" aria-label="${c.title} 第 ${i+1} 個${i<v?'，已完成':''}">${PAW}</button>`).join('') +
+      `</div><div class="hint">${c.hint}</div>${v>=c.target?`<button class="sharebtn" data-sc="${c.id}">打卡分享</button>`:''}</div>`;
+  });
+  $('conds').innerHTML = h;
+
+  /* --- 週 --- */
+  const curW = weekOf(TODAY);
+  $('weeks').innerHTML = WEEKS.map(w =>
+    `<button class="wk ${w===selWeek?'sel':''} ${w===curW?'now':''} ${w.n<curW.n?'past':''}" data-w="${w.n}" aria-label="第 ${w.n} 週">
+      <span>第</span><b>${w.n}</b><span>週</span><i><u style="width:${weekPct(w)*100}%"></u></i></button>`).join('');
+  const wp = weekPct(selWeek);
+  $('weekPct').textContent = Math.round(wp*100)+'%';
+  $('weekRing').style.strokeDashoffset = 314.16*(1-wp);
+  $('shareWeek').hidden = wp < 1;
+  $('weekPhase').textContent = selWeek.phase;
+  $('weekTitle').textContent = `第 ${selWeek.n} 週　${md(selWeek.s)} – ${md(selWeek.e)}`;
+  $('weekRange').textContent = `第 ${selWeek.n} 週　${md(selWeek.s)} – ${md(selWeek.e)}`;
+  $('weekBv').textContent = selWeek.bv;
+  const wa = S.weeks[selWeek.n] || [];
+  $('weekActions').innerHTML = selWeek.acts.map((a,i) =>
+    `<div class="chk ${wa[i]?'on':''}"><button class="box ${wa[i]?'on':''}" data-a="${i}" role="checkbox" aria-checked="${!!wa[i]}" aria-label="${esc(a)}">${PAW}</button><span class="txt">${esc(a)}</span></div>`).join('');
+
+  /* --- 日 --- */
+  $('days').innerHTML = selWeek.days.map(d =>
+    `<button class="dy ${+d===+selDay?'sel':''} ${+d===+TODAY?'today':''}" data-d="${key(d)}" aria-label="${md(d)} 星期${WD[d.getDay()]}">
+      <span>${WD[d.getDay()]}</span><b>${d.getDate()}</b><i style="--p:${dayPct(d)*100}%"></i></button>`).join('');
+  renderDay(true);
+  renderLine();
+  renderPeople();
+}
+
+const fitTasks = () => document.querySelectorAll('#tasks textarea').forEach(t => { t.style.height = 'auto'; if (t.scrollHeight) t.style.height = t.scrollHeight + 'px'; });
+function renderDay(rebuild){
+  const r = peek(selDay), done = r.tasks.filter(t=>t.d).length, p = dayPct(selDay);
+  const dn = Math.round((selDay-START)/DAY)+1;
+  $('dayTitle').textContent = `${md(selDay)} 星期${WD[selDay.getDay()]}` + (+selDay===+TODAY ? '　今天' : '');
+  $('dayMeta').textContent = r.tasks.length ? `挑戰第 ${dn} 天　完成 ${done} / ${r.tasks.length}` : `挑戰第 ${dn} 天　還沒寫任務，先填一件吧`;
+  $('dayBar').style.width = (p*100)+'%';
+  $('cheer').classList.toggle('show', r.tasks.length>0 && p===1);
+  $('shareDay').hidden = done === 0;
+  $('dayCat').src = 'img/cat-' + (!r.tasks.length ? 'sleep' : p===1 ? 'cheer' : done ? 'ball' : 'stretch') + '.png';
+  if (!rebuild) return;
+  $('tasks').innerHTML = r.tasks.map((t,i) =>
+    `<div class="task ${t.d?'on':''}"><button class="box ${t.d?'on':''}" data-t="${i}" role="checkbox" aria-checked="${t.d}" aria-label="完成">${PAW}</button>
+      <textarea class="tt" rows="1" id="task-${i}" data-ti="${i}" aria-label="任務 ${i+1}">${esc(t.t)}</textarea>
+      <button class="del" data-x="${i}" aria-label="刪除這項任務">×</button></div>`).join('') +
+    `<div class="task blank"><span class="box">${PAW}</span>
+      <input type="text" class="tt" id="task-new" placeholder="寫下一件今天要做的事，按 Enter 新增" aria-label="新增任務"></div>`;
+  fitTasks();
+  $('dayBv').value = r.bv || '';
+  $('dayNote').value = r.note || '';
+}
+
+function renderLine(){
+  const L = S.line, r = peek(TODAY), left = r.tasks.filter(t=>!t.d);
+  const w = weekOf(TODAY), dn = Math.round((TODAY-START)/DAY)+1;
+  $('lineOn').setAttribute('aria-checked', L.on); $('lineWk').setAttribute('aria-checked', L.wk);
+  $('lineAm').value = L.am; $('linePm').value = L.pm;
+  const list = left.length ? left.map(t=>'・'+t.t).join('\n') : '・今天還沒寫任務，打開日誌填一件吧';
+  $('linePrev').textContent = L.on
+    ? `🐾 達爾文 ${L.am} 來報到\n${CONFIG.name}早安！今天是挑戰第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 2/5 還有 ${$('daysLeft').textContent} 天`
+    : '提醒已關閉，達爾文先去睡覺了。';
+}
+
+/* ---------- 事件 ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const ds = b.dataset;
+  if (ds.go){ setTab(ds.go); try{ location.hash = ds.go; }catch(_){} return; }
+  if (ds.wk){ const w = WEEKS[selWeek.n-1+(+ds.wk)]; if (!w) return; selWeek = w; selDay = (TODAY>=w.s && TODAY<=w.e) ? TODAY : w.s; save(); render(); return; }
+  if (ds.c){ const i = +ds.i, v = S.cond[ds.c]||0; S.cond[ds.c] = (v === i+1) ? i : i+1; }
+  else if (ds.w){ selWeek = WEEKS[ds.w-1]; selDay = (TODAY>=selWeek.s && TODAY<=selWeek.e) ? TODAY : selWeek.s; }
+  else if (ds.a){ const a = S.weeks[selWeek.n] || (S.weeks[selWeek.n]=[]); a[ds.a] = !a[ds.a]; }
+  else if (ds.d){ selDay = selWeek.days.find(d => key(d)===ds.d); }
+  else if (ds.t){ const t = dayRec(selDay).tasks[ds.t]; t.d = !t.d; if (t.d && +selDay===+TODAY){ save(); render(); darwin('taskDone',{task:t.t}); return; } }
+  else if (ds.x){ dayRec(selDay).tasks.splice(ds.x,1); }
+  else if (b.id==='lineOn'){ S.line.on = !S.line.on; }
+  else if (b.id==='lineWk'){ S.line.wk = !S.line.wk; }
+  else if (b.id==='reset'){
+    if (b.dataset.sure){ S = {people:[],cond:{},weeks:{},days:{},lu:{left:CONFIG.main.leftStart},line:S.line}; delete b.dataset.sure; b.textContent='清空範例與紀錄'; }
+    else { b.dataset.sure = 1; b.textContent = '再按一次確認清空'; setTimeout(()=>{ delete b.dataset.sure; b.textContent='清空範例與紀錄'; }, 4000); return; }
+  } else return;
+  save(); render();
+});
+$('tasks').addEventListener('input', e => {
+  if (e.target.dataset.ti !== undefined){ e.target.value = e.target.value.replace(/\n/g,''); fitTasks(); dayRec(selDay).tasks[e.target.dataset.ti].t = e.target.value; save(); renderLine(); }
+});
+function addTask(el){
+  const v = el.value.trim(); if (!v) return;
+  dayRec(selDay).tasks.push({t:v, d:false}); save(); render(); $('task-new').focus(); darwin('taskAdd',{task:v});
+}
+$('tasks').addEventListener('keydown', e => { if (e.key==='Enter' && !e.isComposing && e.target.id==='task-new'){ e.preventDefault(); addTask(e.target); } });
+$('tasks').addEventListener('focusout', e => { if (e.target.id==='task-new' && e.target.value.trim()){ const v=e.target.value.trim(); dayRec(selDay).tasks.push({t:v,d:false}); save(); render(); darwin('taskAdd',{task:v}); } });
+$('dayBv').addEventListener('change', e => { const v = +e.target.value||0; if (v>0) darwin('bv',{bv:v}); });
+$('dayBv').addEventListener('input', e => { dayRec(selDay).bv = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
+$('dayNote').addEventListener('input', e => { dayRec(selDay).note = e.target.value; save(); });
+['lineAm','linePm'].forEach((id,k) => {
+  const el = $(id), from = k ? 17 : 6;
+  for (let h=from; h<from+7; h++) for (const m of ['00','30']) el.add(new Option(String(h).padStart(2,'0')+':'+m));
+  el.addEventListener('change', () => { S.line[k?'pm':'am'] = el.value; save(); renderLine(); });
+});
+
+/* ---------- 達爾文 AI 回應 ---------- */
+const pick = a => a[Math.floor(Math.random()*a.length)];
+function snapshot(){
+  const w = weekOf(TODAY), r = peek(TODAY), wa = S.weeks[w.n] || [];
+  return { name: CONFIG.name, day: Math.round((TODAY-START)/DAY)+1, week: w.n, phase: w.phase,
+    daysLeft: Math.max(0, Math.round((MAIN_END-TODAY)/DAY)), leftBV: +S.lu.left||0, totalPct: +$('totalPct').textContent,
+    weekPct: Math.round(weekPct(w)*100), bv: bvTotal(), bvTarget: CONFIG.bvTarget,
+    todayDone: r.tasks.filter(t=>t.d).map(t=>t.t), todayLeft: r.tasks.filter(t=>!t.d).map(t=>t.t),
+    weekLeft: w.acts.filter((_,i)=>!wa[i]), people: S.people.length };
+}
+function localReply(ev, d, st){
+  const left = st.todayLeft.length;
+  if (ev==='hello') return st.todayDone.length+left ? `今天寫了 ${st.todayDone.length+left} 件事，已完成 ${st.todayDone.length} 件。打勾的時候我會在這裡幫你加油。` : '今天還沒寫任務，先填一件最小的事，我陪你開始。';
+  if (ev==='taskAdd') return pick([`「${d.task}」寫下來就成功一半了，喵。`, `好，「${d.task}」記住了。做完記得回來蓋貓掌。`]);
+  if (ev==='taskDone') return left
+    ? pick([`「${d.task}」完成！太棒了，今天還剩 ${left} 件，一件一件來。`, `做完「${d.task}」了，我看到了！再 ${left} 件就可以翻肚休息。`, `好厲害，「${d.task}」打勾。離豪宅又近一步。`])
+    : pick([`今天全部做完了！${st.name}太強了，我要開罐罐慶祝。`, `全部打勾！今天的你值得一個大大的呼嚕。`]);
+  if (ev==='bv') return `今天多了 ${d.bv} BV，累積 ${st.bv.toLocaleString()} / ${st.bvTarget.toLocaleString()}。豪宅的磚又多了幾塊。`;
+  if (ev==='advice'){
+    if (left) return `先做最容易的那件：「${st.todayLeft[0]}」。做完它，剩下的就順了。`;
+    if (st.weekLeft.length) return `今天的事都清空了。這週還有「${st.weekLeft[0]}」，要不要排一個時間進日計劃？`;
+    return `這週的重點都完成了，可以去名單挑一位好久沒聯絡的人，傳個問候。`;
+  }
+  if (ev==='person'){
+    const tip = d.status==='邀約中' ? (d.date ? `${d.date} 見面前，把想問的三個問題寫進日計劃。` : '幫這次邀約訂一個會面日期，會更容易成真。')
+      : d.status==='已加入' ? '太好了！下一步陪他設定自動購貨。'
+      : d.status==='暫緩' ? '先放著沒關係，過一陣子再問候就好。'
+      : d.rel==='熟識' ? '你們很熟，這週約個輕鬆的咖啡最自然。' : '先從關心近況開始，不急著談產品。';
+    return `${d.name} 加進名單了，現在共有 ${st.people} 位。${tip}`;
+  }
+  if (ev==='listHello') return st.people ? `名單上有 ${st.people} 位。每新增或更新一位，我都會給你一個小建議。` : '寫下第一位想分享的人，我來幫你想下一步。';
+  return '';
+}
+async function darwin(ev, d = {}, where = 'Day'){
+  const box = $('ai'+where), out = $('ai'+where+'Text'), st = snapshot();
+  const show = t => { out.textContent = t; box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop'); };
+  show(localReply(ev, d, st));
+  if (!CONFIG.ai.endpoint || ev==='hello' || ev==='listHello') return;
+  try {
+    const r = await fetch(CONFIG.ai.endpoint, {method:'POST', headers:{'Content-Type':'application/json', 'x-code': codeGet()},
+      body: JSON.stringify({event: ev, detail: d, state: st, persona: CONFIG.ai.persona})});
+    const j = await r.json();
+    if (j && j.reply) show(j.reply);
+  } catch(e){ /* 連不上就保留內建回應 */ }
+}
+$('luConds').addEventListener('click', e => { const b = e.target.closest('[data-lu]'); if (!b) return;
+  S.lu[b.dataset.lu] = S.lu[b.dataset.lu] ? 0 : 1; save(); render(); });
+$('luLeft').addEventListener('input', e => { S.lu.left = Math.max(0, +e.target.value || 0); save(); render(); });
+$('aiAsk').addEventListener('click', () => darwin('advice'));
+
+/* ---------- 打卡分享圖 ---------- */
+const CW = 1080, CH = 1350, INK = '#4A2C1A';
+const imgCache = {};
+const loadImg = src => imgCache[src] || (imgCache[src] = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; }));
+function pawAt(c, x, y, sz, rot, col){
+  c.save(); c.translate(x,y); c.rotate(rot); c.scale(sz/32, sz/32); c.translate(-16,-16); c.fillStyle = col;
+  [[16,21,8,6.5],[6,13,3.2,4.2],[12.3,7.5,3.3,4.4],[19.7,7.5,3.3,4.4],[26,13,3.2,4.2]].forEach(e => { c.beginPath(); c.ellipse(...e,0,0,7); c.fill(); });
+  c.restore();
+}
+function wrapText(c, text, maxW, maxLines){
+  const lines = []; let cur = '';
+  for (const ch of text){ if (c.measureText(cur+ch).width > maxW){ lines.push(cur); cur = ch; } else cur += ch; }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines){ lines.length = maxLines; let l = lines[maxLines-1]; while (c.measureText(l+'…').width > maxW) l = l.slice(0,-1); lines[maxLines-1] = l+'…'; }
+  return lines;
+}
+function sticker(c, x, y, w, h, r, fill, lw = 8, drop = 12){
+  c.fillStyle = INK; c.beginPath(); c.roundRect(x, y+drop, w, h, r); c.fill();
+  c.fillStyle = fill; c.strokeStyle = INK; c.lineWidth = lw; c.beginPath(); c.roundRect(x, y, w, h, r); c.fill(); c.stroke();
+}
+function pattern(c, st){
+  c.fillStyle = st.color; c.fillRect(0,0,CW,CH); c.fillStyle = st.mark;
+  if (st.pattern==='dots') for (let y=45,r=0; y<CH; y+=90,r++) for (let x=(r%2?90:45); x<CW; x+=90){ c.beginPath(); c.arc(x,y,13,0,7); c.fill(); }
+  if (st.pattern==='cloud') [[160,120,1],[820,90,1.3],[930,620,.9],[110,760,1.1],[560,1240,1.4],[200,1180,.8]].forEach(([x,y,k]) => {
+    [[0,0,60],[70,-25,75],[150,0,60],[75,20,70]].forEach(([dx,dy,r]) => { c.beginPath(); c.arc(x+dx*k,y+dy*k,r*k,0,7); c.fill(); }); });
+  if (st.pattern==='paw') for (let y=70,r=0; y<CH; y+=150,r++) for (let x=(r%2?150:60); x<CW; x+=180) pawAt(c,x,y,70,(r%2?.4:-.4),st.mark);
+  if (st.pattern==='stripe'){ c.save(); c.rotate(-.35); for (let x=-900; x<CW+900; x+=120) c.fillRect(x,-400,60,CH+1400); c.restore(); }
+  if (st.pattern==='bubble'){ c.globalAlpha = .55; [[120,150,80],[930,210,120],[980,700,60],[90,640,50],[160,1180,110],[620,1260,70],[820,1050,90],[500,90,45]].forEach(([x,y,r]) => { c.beginPath(); c.arc(x,y,r,0,7); c.fill(); }); c.globalAlpha = 1; }
+}
+async function makeCard(d, i){
+  const st = CONFIG.share[i], F = (w,px) => `${w} ${px}px "Baloo 2","Chiron GoRound TC","PingFang TC",sans-serif`;
+  try { await Promise.race([new Promise(r => setTimeout(r, 1500)), Promise.all([document.fonts.load(F(800,70), d.title+d.tag+'0123456789%'), document.fonts.load('700 40px "Chiron GoRound TC"', d.items.join('')+d.title+d.foot+d.tag+'總目標挑戰第天達爾文豪宅計劃')])]); } catch(e){}
+  const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH; const c = cv.getContext('2d');
+  const bg = st.bg ? await loadImg(st.bg) : null;
+  if (bg){ const k = Math.max(CW/bg.width, CH/bg.height); c.drawImage(bg, (CW-bg.width*k)/2, (CH-bg.height*k)/2, bg.width*k, bg.height*k); } else pattern(c, st);
+  const cat = await loadImg('img/'+st.cat+'.png'), A = st.layout==='A';
+  const px = 60, pw = CW-120, py = A ? 170 : 400, ph = A ? 800 : 760;
+  c.textBaseline = 'middle';
+  /* 上方或下方的小標 */
+  const tagText = '達爾文豪宅計劃　' + d.date; c.font = F(700,36);
+  const tw = c.measureText(tagText).width + 60, ty = A ? 56 : 1222;
+  sticker(c, (CW-tw)/2, ty, tw, 70, 35, '#fff', 6, 8); c.fillStyle = INK; c.textAlign = 'center'; c.fillText(tagText, CW/2, ty+37);
+  /* 白色貼紙面板 */
+  sticker(c, px, py, pw, ph, 56, '#fff');
+  let y = py + (A ? 70 : 110);
+  c.font = F(700,34); const kw = c.measureText(d.tag).width + 48;
+  c.fillStyle = st.accent; c.beginPath(); c.roundRect(CW/2-kw/2, y-28, kw, 56, 28); c.fill();
+  c.fillStyle = '#fff'; c.fillText(d.tag, CW/2, y+2); y += 86;
+  c.fillStyle = INK; c.font = F(800,74);
+  for (const l of wrapText(c, d.title, pw-110, 2)){ c.fillText(l, CW/2, y); y += 90; }
+  y += 6; c.textAlign = 'left'; c.font = F(700,40);
+  for (const it of d.items.slice(0,4)){
+    c.fillStyle = '#86B544'; c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.arc(px+92, y, 26, 0, 7); c.fill(); c.stroke();
+    pawAt(c, px+92, y, 34, 0, '#fff'); c.fillStyle = INK; c.fillText(wrapText(c, it, pw-230, 1)[0], px+138, y+2); y += 76;
+  }
+  if (d.items.length > 4){ c.fillStyle = '#8C6B55'; c.font = F(700,32); c.fillText(`還有 ${d.items.length-4} 項`, px+138, y-10); }
+  /* 總目標進度條 */
+  const by = py + ph - 96, bx = px+60, bw = pw-120;
+  c.font = F(700,32); c.fillStyle = '#8C6B55'; c.fillText(`總目標 ${d.totalPct}%`, bx, by-40);
+  c.textAlign = 'right'; c.fillText(d.foot, bx+bw, by-40);
+  c.fillStyle = '#fff'; c.strokeStyle = INK; c.lineWidth = 6; c.beginPath(); c.roundRect(bx, by, bw, 36, 18); c.fill(); c.stroke();
+  if (d.totalPct > 0){ c.save(); c.beginPath(); c.roundRect(bx, by, bw, 36, 18); c.clip(); c.fillStyle = st.accent; c.fillRect(bx, by, bw*d.totalPct/100, 36); c.restore(); c.beginPath(); c.roundRect(bx, by, bw, 36, 18); c.stroke(); }
+  /* 達爾文 */
+  if (cat){
+    const h = A ? 400 : 370, w = cat.width*h/cat.height;
+    if (A) c.drawImage(cat, CW-w-70, CH-h-30, w, h); else c.drawImage(cat, (CW-w)/2, py-h+70, w, h);
+  }
+  if (A){ c.textAlign = 'left'; c.font = F(800,60); c.lineWidth = 14; c.strokeStyle = '#fff'; c.lineJoin = 'round'; c.fillStyle = INK;
+    c.strokeText(CONFIG.name+' 打卡！', 70, CH-190); c.fillText(CONFIG.name+' 打卡！', 70, CH-190);
+    c.font = F(700,36); c.strokeText('一步一步，走向豪宅', 70, CH-112); c.fillText('一步一步，走向豪宅', 70, CH-112); }
+  return new Promise(res => cv.toBlob(res, 'image/png'));
+}
+let shareData = null, shareBlob = null, shareUrl = '';
+function shareBase(){ const st = snapshot(); return {date: md(TODAY), totalPct: st.totalPct, foot: `挑戰第 ${st.day} 天`}; }
+async function drawShare(){
+  const i = S.shareStyle || 0;
+  $('shareStyles').innerHTML = CONFIG.share.map((x,k) => `<button class="chip ${k===i?'on':''}" data-ss="${k}">${x.name}</button>`).join('');
+  shareBlob = await makeCard(shareData, i);
+  if (shareUrl) URL.revokeObjectURL(shareUrl);
+  shareUrl = URL.createObjectURL(shareBlob); $('shareImg').src = shareUrl;
+  let ok = false; try { ok = !!navigator.canShare && navigator.canShare({files:[new File([shareBlob],'darwin.png',{type:'image/png'})]}); } catch(e){}
+  $('shareAct').hidden = !ok;
+}
+function openShare(d){ shareData = {...shareBase(), ...d}; $('shareBg').hidden = false; document.body.classList.add('lock'); drawShare(); }
+const closeShare = () => { $('shareBg').hidden = true; document.body.classList.remove('lock'); };
+$('shareClose').addEventListener('click', closeShare);
+$('shareBg').addEventListener('click', e => { if (e.target.id==='shareBg') closeShare(); });
+$('shareStyles').addEventListener('click', e => { const b = e.target.closest('[data-ss]'); if (b){ S.shareStyle = +b.dataset.ss; save(); drawShare(); } });
+$('shareGo').addEventListener('click', async () => { try { await navigator.share({files:[new File([shareBlob],'darwin.png',{type:'image/png'})]}); } catch(e){ $('shareHint').textContent = '這裡無法直接分享，請長按圖片儲存後再傳到 LINE。'; } });
+$('shareLv').addEventListener('click', () => { const L = CONFIG.levelUp.steps, lv = lvNow(), got = L.slice(0,lv+1);
+  openShare({tag:'Level Up', title:`晉升${L[lv].name}！`, items:[`佣金 ${wan(got.reduce((a,x)=>a+x.comm,0))}`, `Level Up 獎金 ${wan(got.reduce((a,x)=>a+x.bonus,0))}`]}); });
+$('shareDay').addEventListener('click', () => { const r = peek(selDay), done = r.tasks.filter(t=>t.d);
+  openShare({tag: md(selDay)+' 今日打卡', date: md(selDay), title: done.length===r.tasks.length ? '今天的任務全部完成！' : `今天完成 ${done.length} 件事！`, items: done.map(t=>t.t)}); });
+$('shareWeek').addEventListener('click', () => openShare({tag: selWeek.phase, title: `第 ${selWeek.n} 週目標達成！`, items: selWeek.acts}));
+$('conds').addEventListener('click', e => { const b = e.target.closest('[data-sc]'); if (!b) return;
+  const c = CONFIG.counters.find(x => x.id===b.dataset.sc);
+  openShare(c ? {tag:'條件達成', title: c.title+' 達成！', items:[`目標 ${c.target}，已完成 ${S.cond[c.id]}`, c.hint]}
+              : {tag:'條件達成', title:`${CONFIG.bvTarget.toLocaleString()} BV 達成！`, items:[`累積 ${bvTotal().toLocaleString()} BV`]}); });
+
+/* ---------- 名單 ---------- */
+const PC = CONFIG.people;
+let pFilter = '全部', pEdit = -1, draft = {};
+function renderPeople(){
+  $('pFilters').innerHTML = ['全部', ...PC.status].map(f => {
+    const n = f==='全部' ? S.people.length : S.people.filter(x => x.status===f).length;
+    return `<button class="chip ${f===pFilter?'on':''}" data-pf="${f}">${f} ${n}</button>`; }).join('');
+  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => pFilter==='全部' || x.status===pFilter);
+  $('pList').innerHTML = rows.length ? rows.map(([x,i]) => {
+    const meta = [x.side, x.job, x.city, x.rel].filter(Boolean).map(esc).join('・');
+    const memo = [x.date ? '會面 '+x.date : '', x.note].filter(Boolean).join('　');
+    return `<button class="person" data-pe="${i}"><h3>${esc(x.name)} <small>${x.age?esc(x.age)+'歲':''} ${esc(x.sex||'')}</small></h3>
+      <span class="st s${PC.status.indexOf(x.status)}">${esc(x.status||'未分類')}</span>
+      ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}</button>`; }).join('')
+    : `<div class="empty"><img src="img/cat-sleep.png" alt=""><span>${S.people.length ? '這個分類還沒有人。' : '名單還是空的，按「＋ 新增」寫下第一位想分享的人。'}</span></div>`;
+}
+const P_TEXT = {pName:'name',pSex:'sex',pAge:'age',pCity:'city',pFamily:'family',pJob:'job',pFun:'fun',pMoney:'money',pHealth:'health',pDream:'dream',pContact:'contact',pDate:'date',pNote:'note'};
+[['pFamily',PC.family],['pMoney',PC.money],['pHealth',PC.health]].forEach(([id,opts]) => { $(id).add(new Option('不填','')); opts.forEach(o => $(id).add(new Option(o))); });
+function drawChips(){
+  document.querySelectorAll('#pForm [data-g]').forEach(g => { const k = g.dataset.g;
+    g.innerHTML = PC[k].map(o => `<button type="button" class="chip ${draft[k]===o?'on':''}" data-pv="${o}" aria-pressed="${draft[k]===o}">${o}</button>`).join(''); });
+}
+function openSheet(i){
+  pEdit = i; draft = i>=0 ? {...S.people[i]} : {status:PC.status[0], side:'未定'};
+  $('pTitle').textContent = i>=0 ? '編輯聯絡人' : '新增聯絡人';
+  $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
+  for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
+  drawChips(); $('sheet').hidden = false; document.body.classList.add('lock'); $('pForm').scrollTop = 0;
+}
+const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
+$('pAdd').addEventListener('click', () => openSheet(-1));
+$('pClose').addEventListener('click', closeSheet);
+$('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });
+$('pFilters').addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = b.dataset.pf; renderPeople(); } });
+$('pList').addEventListener('click', e => { const b = e.target.closest('[data-pe]'); if (b) openSheet(+b.dataset.pe); });
+$('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b) return;
+  const k = b.parentNode.dataset.g; draft[k] = draft[k]===b.dataset.pv ? '' : b.dataset.pv; drawChips(); });
+$('pForm').addEventListener('submit', e => { e.preventDefault();
+  for (const id in P_TEXT) draft[P_TEXT[id]] = $(id).value.trim();
+  if (!draft.name) return;
+  if (pEdit>=0) S.people[pEdit] = draft; else S.people.unshift(draft);
+  save(); closeSheet(); renderPeople();
+  darwin('person', {name:draft.name, status:draft.status, rel:draft.rel, side:draft.side, date:draft.date}, 'List'); });
+$('pDel').addEventListener('click', e => { const b = e.currentTarget;
+  if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次刪除'; return; }
+  delete b.dataset.sure; S.people.splice(pEdit,1); save(); closeSheet(); renderPeople(); });
+
+const TABS = ['day','week','list','goal','line'];
+function setTab(t){
+  if (!TABS.includes(t)) t = 'day';
+  document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== t);
+  document.querySelectorAll('.tab').forEach(b => b.dataset.go===t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
+  document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
+  if (t==='day') fitTasks();
+  if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
+}
+$('codeForm').addEventListener('submit', async e => { e.preventDefault();
+  try { localStorage.setItem('darwin-code', $('codeIn').value.trim()); } catch(_){}
+  $('codeErr').textContent = ''; try { await cloudPull(); } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; } });
+$('lineTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = '傳送中…';
+  try { const j = await (await api('line/test', {method:'POST'})).json(); $('lineMsg').textContent = j.ok ? '已傳送，請看 LINE。' : (j.error || '傳送失敗。'); }
+  catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
+warmDays();
+render();
+cloudInit();
+darwin('hello'); darwin('listHello', {}, 'List');
+setTab(location.hash.slice(1));
+window.addEventListener('hashchange', () => setTab(location.hash.slice(1)));
+</script>
+</body>
+</html>
