@@ -1,7 +1,7 @@
 /* 達爾文豪宅計劃 — Cloudflare Pages Functions
  * 路由：
  *   GET  /api/ping           是否有後端
- *   GET  /api/view           檢視模式用的紀錄，不用通關碼（不含名單、提醒設定）
+ *   GET  /api/view           檢視模式用的紀錄，不用通關碼，全部內容（只能讀）
  *   GET  /api/state          讀取紀錄（需通關碼）
  *   PUT  /api/state          儲存紀錄（需通關碼）
  *   POST /api/ai             達爾文 AI 回應，轉呼叫 MiniMax（需通關碼）
@@ -396,12 +396,9 @@ export async function onRequest({ request, env, params, waitUntil }) {
       if (!env.CRON_KEY || k !== env.CRON_KEY) return json({ error: 'key' }, 401);
       return json(await runCron(env));
     }
-    if (path === 'view' && method === 'GET') {
+    if (path === 'view' && method === 'GET') {        // 檢視模式：全部內容都看得到，但這個網址只能讀、不能寫
       const st = await loadState(env);
-      if (!st || !st.data) return json({ data: null, updated: 0 });
-      const S = st.data, days = {};
-      for (const [k, r] of Object.entries(S.days || {})) days[k] = { tasks: (r.tasks || []).map(t => ({ t: String(t.t), d: !!t.d })), bv: +r.bv || 0, note: String(r.note || '') };
-      return json({ data: { days, weeks: S.weeks || {}, cond: S.cond || {}, lu: S.lu || {}, meta: S.meta || {}, shareStyle: S.shareStyle || 0 }, updated: st.updated });
+      return json(st || { data: null, updated: 0 });
     }
     if (!env.ACCESS_CODE || request.headers.get('x-code') !== env.ACCESS_CODE) return json({ error: 'code' }, 401);
 

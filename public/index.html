@@ -120,8 +120,9 @@ body.lock{overflow:hidden}
 .viewbar button{border:2.5px solid var(--ink);border-radius:999px;background:#fff;font-weight:700;font-size:13px;padding:4px 12px}
 .sheet-act .ghost{flex:1;background:#fff}
 /* 檢視模式：只能看，不能改 */
-body.view .tab[data-go=list], body.view .tab[data-go=line], body.view #reset, body.view .task.blank, body.view .del, body.view #aiAsk{display:none!important}
-body.view .tabs{grid-template-columns:repeat(3,1fr)}
+body.view #reset, body.view .task.blank, body.view .del, body.view #aiAsk, body.view #pAdd, body.view #lineTest, body.view #aiTest, body.view #pDel, body.view #pForm .save,
+body.view .aifill, body.view .fulog, body.view #fMsg, body.view #fTl .fx{display:none!important}
+body.view .sw, body.view #lineWhere, body.view #lineAm, body.view #linePm, body.view #pForm .chip{pointer-events:none}
 body.view #tasks .tt, body.view #tasks .box, body.view #weekActions .box, body.view .paw, body.view #dayBv, body.view #dayNote, body.view #luLeft{pointer-events:none}
 body.view #tasks .tt{border-bottom-color:transparent}
 .sheet-top{display:flex;justify-content:space-between;align-items:center}
@@ -370,7 +371,7 @@ body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
     </div>
   </header>
 
-  <div class="card viewbar" id="viewBar" hidden><span>👀 檢視模式：只能看進度，不能修改</span><button type="button" id="toEdit">輸入通關碼編輯</button></div>
+  <div class="card viewbar" id="viewBar" hidden><span>👀 檢視模式：全部看得到，但不能修改</span><button type="button" id="toEdit">輸入通關碼編輯</button></div>
 
   <div class="glance" aria-label="三層進度">
     <button class="g" data-go="day"><i class="g-ring" id="gDay"><b></b></i><span>今日<small>今天的任務</small></span></button>
@@ -848,12 +849,12 @@ const viewPref = v => { try { if (v === true) localStorage.setItem('darwin-view'
 async function enterView(){
   const j = await (await fetch('api/view')).json();
   VIEW = true; viewPref(true); document.body.classList.add('view');
-  S = j.data || {}; S.people = []; S.days = S.days || {}; S.weeks = S.weeks || {}; S.cond = S.cond || {};
-  S.lu = S.lu || {left:CONFIG.main.leftStart}; S.line = {on:false, am:'08:00', pm:'21:00', wk:false};
+  S = j.data || {}; S.people = S.people || []; S.days = S.days || {}; S.weeks = S.weeks || {}; S.cond = S.cond || {};
+  S.lu = S.lu || {left:CONFIG.main.leftStart}; S.line = S.line || {on:true, am:'08:00', pm:'21:00', wk:true};
   $('codeBg').hidden = true; $('viewBar').hidden = false;
   document.querySelectorAll('#tasks textarea, #dayBv, #dayNote, #luLeft').forEach(x => x.readOnly = true);
   $('dayNote').placeholder = '主人今天還沒寫小筆記';
-  if (['list','line'].includes(location.hash.slice(1))) setTab('day');
+  ['lineWhere','lineAm','linePm'].forEach(id => $(id).disabled = true);
   warmDays(); render(); darwin('hello');
   $('footNote').textContent = '檢視模式：看到的是主人最新的進度。';
 }
@@ -1143,11 +1144,11 @@ $('notePlan').addEventListener('click', e => {
   notePlan = null; $('notePlan').hidden = true;
   $('noteAiMsg').textContent = `已更新名單 ${np} 位` + (nf ? `、排好 ${nf} 個跟進` : '') + (nt ? `、加入 ${nt} 件行程` : '');
 });
-$('lineWhere').addEventListener('change', e => { S.line.where = e.target.value; save(); renderLine(); });
+$('lineWhere').addEventListener('change', e => { if (VIEW) return; S.line.where = e.target.value; save(); renderLine(); });
 ['lineAm','linePm'].forEach((id,k) => {
   const el = $(id), from = k ? 17 : 6;
   for (let h=from; h<from+7; h++) for (const m of ['00','30']) el.add(new Option(String(h).padStart(2,'0')+':'+m));
-  el.addEventListener('change', () => { S.line[k?'pm':'am'] = el.value; save(); renderLine(); });
+  el.addEventListener('change', () => { if (VIEW) return; S.line[k?'pm':'am'] = el.value; save(); renderLine(); });
 });
 
 /* ---------- 達爾文 AI 回應 ---------- */
@@ -1351,7 +1352,8 @@ function openSheet(i){
   pEdit = i; draft = i>=0 ? {...S.people[i]} : {status:PC.status[0], side:'未定'};
   $('pTitle').textContent = i>=0 ? '編輯聯絡人' : '新增聯絡人';
   $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
-  for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
+  for (const id in P_TEXT){ $(id).value = draft[P_TEXT[id]] ?? ''; $(id).disabled = VIEW; if (VIEW && 'placeholder' in $(id)) $(id).placeholder = ''; }
+  if (VIEW) $('pTitle').textContent = '聯絡人資料';
   $('pRaw').value = ''; $('pAiMsg').textContent = '';
   $('fDate').value = tk(); $('fType').value = FL.types[0]; $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = ''; $('fMsg').textContent = '';
   drawTl();
@@ -1371,7 +1373,7 @@ function drawTl(){
       <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
     : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
 }
-function keepPerson(){ if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
+function keepPerson(){ if (VIEW) return; if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
 $('fAdd').addEventListener('click', () => { if (VIEW) return;
   const log = {d: $('fDate').value || tk(), type: $('fType').value, result: $('fResult').value, product: $('fProd').value.trim(), note: $('fNote').value.trim()};
   draft.log = (draft.log || []).concat(log);
@@ -1442,9 +1444,9 @@ $('pCopy').addEventListener('click', async () => {
   setTimeout(() => b.textContent = '複製給 Leader', 2000);
 });
 const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
-$('pAdd').addEventListener('click', () => openSheet(-1));
+$('pAdd').addEventListener('click', () => { if (!VIEW) openSheet(-1); });
 /* AI 分析描述：只填目前還空著的欄位，備註則接在後面，不會蓋掉你已經寫的內容 */
-$('pAi').addEventListener('click', async () => {
+$('pAi').addEventListener('click', async () => { if (VIEW) return;
   const text = $('pRaw').value.trim();
   if (!text){ $('pAiMsg').textContent = '先貼上一段描述'; $('pRaw').focus(); return; }
   const btn = $('pAi'); btn.disabled = true; $('pAiMsg').textContent = '達爾文分析中，最多等 1 分鐘…';
@@ -1474,21 +1476,21 @@ $('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeShee
 document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });
 ['pFilters','fuStats'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = (pFilter === b.dataset.pf && b.dataset.pf[0]==='@') ? '全部' : b.dataset.pf; renderPeople(); } }));
 $('pList').addEventListener('click', e => { const b = e.target.closest('[data-pe]'); if (b) openSheet(+b.dataset.pe); });
-$('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b) return;
+$('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b || VIEW) return;
   const k = b.parentNode.dataset.g; draft[k] = draft[k]===b.dataset.pv ? '' : b.dataset.pv; drawChips(); });
-$('pForm').addEventListener('submit', e => { e.preventDefault();
+$('pForm').addEventListener('submit', e => { e.preventDefault(); if (VIEW) return;
   for (const id in P_TEXT) draft[P_TEXT[id]] = $(id).value.trim();
   if (!draft.name) return;
   if (pEdit>=0) S.people[pEdit] = draft; else S.people.unshift(draft);
   save(); closeSheet(); renderPeople();
   darwin('person', {name:draft.name, status:draft.status, rel:draft.rel, side:draft.side, date:draft.date}, 'List'); });
-$('pDel').addEventListener('click', e => { const b = e.currentTarget;
+$('pDel').addEventListener('click', e => { if (VIEW) return; const b = e.currentTarget;
   if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次刪除'; return; }
   delete b.dataset.sure; S.people.splice(pEdit,1); save(); closeSheet(); renderPeople(); });
 
 const TABS = ['day','week','list','goal','line'];
 function setTab(t){
-  if (!TABS.includes(t) || (VIEW && (t==='list' || t==='line'))) t = 'day';
+  if (!TABS.includes(t)) t = 'day';
   document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== t);
   document.querySelectorAll('.tab').forEach(b => b.dataset.go===t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
   document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
