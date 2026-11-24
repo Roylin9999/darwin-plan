@@ -293,6 +293,59 @@ body.view #tasks .tt{border-bottom-color:transparent}
 @keyframes wig{50%{transform:rotate(-7deg) scale(1.05)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media (max-width:380px){.card{padding:14px}.hero h1{font-size:22px}.total-row .big{font-size:46px}}
+/* 名單：跟進工作台與時間軸 */
+.fustats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.fustats button{border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:8px 6px;text-align:left;font:inherit;cursor:pointer;min-width:0}
+.fustats button.on{background:var(--orange-soft)}
+.fustats span{display:block;font-size:12px;font-weight:700;color:var(--ink-soft)}
+.fustats b{font-family:var(--display);font-size:24px;line-height:1.1}
+.fustats .hot b{color:#C0392B}
+.person .nf{grid-column:1/-1;justify-self:start;font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;background:var(--green-soft)}
+.person .nf.due{background:#FFD9CF}
+.fulog{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fulog .wide{grid-column:1/-1}
+.fulog .go{grid-column:1/-1;border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:7px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.tl{list-style:none;margin:10px 0 0;padding:0 0 0 18px;border-left:3px dashed #D9C7A3}
+.tl li{position:relative;padding:4px 0 8px 6px;font-size:14px;line-height:1.5}
+.tl li::before{content:"";position:absolute;left:-26px;top:9px;width:12px;height:12px;border-radius:50%;border:2.5px solid var(--ink);background:var(--orange)}
+.tl li.fu::before{background:#fff}
+.tl li.fu.late::before{background:#F4A6A0}
+.tl li.fu.ok::before{background:var(--green)}
+.tl .dt{font-weight:700;margin-right:6px}
+.tl small{display:block;color:var(--ink-soft);font-size:12px}
+.tl .fx{display:inline-flex;gap:6px;margin-left:6px}
+.tl .fx button{border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:0 8px;cursor:pointer}
+.tl li.ok .t{text-decoration:line-through;color:var(--ink-soft)}
+.futoday{margin:12px 0 4px;background:#FFF0E6;border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px}
+.futoday h3{font-size:15px;margin:0 0 4px}
+.futoday .row{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1.5px dashed #F0C9B5;font-size:14px}
+.futoday .row:first-of-type{border-top:0}
+.futoday .row .who{flex:none;white-space:nowrap;font-weight:700;border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ink);text-decoration:underline;cursor:pointer}
+.futoday .row .late{flex:none;white-space:nowrap;color:#C0392B;font-size:12px;font-weight:700}
+.futoday .row .ok{flex:none;white-space:nowrap;margin-left:auto;border:2px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;cursor:pointer}
+/* 名單：複製給 Leader */
+#pForm .sheet-act{flex-wrap:wrap}
+.copybtn{flex:1 1 100%;order:-1;min-height:46px;border:2.5px solid var(--ink);border-radius:14px;background:var(--sky);font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
+/* 名單：AI 幫忙填表 */
+.aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
+.aifill label{display:block;font-weight:700;margin-bottom:6px}
+.aifill textarea{width:100%;min-height:90px;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:10px 12px;font:inherit;color:var(--ink)}
+.airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.airow button:disabled{opacity:.6}
+#pAiMsg,#noteAiMsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
+.notePlan{margin-top:10px;background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px}
+.notePlan h4{margin:0 0 6px;font-size:14px}
+.notePlan label{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1.5px dashed #CFE0A8;font-size:14px;line-height:1.5}
+.notePlan label:last-of-type{border-bottom:0}
+.notePlan input{margin-top:4px;width:18px;height:18px;accent-color:var(--green);flex:none}
+.notePlan small{display:block;color:var(--ink-soft);font-size:12px}
+.notePlan .acts{display:flex;gap:8px;margin-top:8px}
+.field .notePlan label{display:flex;flex-direction:row;margin:0;font-weight:400}
+.field .notePlan input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;margin:3px 0 0;flex:none;border:0;box-shadow:none}
+.notePlan .acts button{border:2.5px solid var(--ink);border-radius:999px;font:inherit;font-weight:700;padding:5px 14px;cursor:pointer;background:#fff}
+.notePlan .acts .go{background:var(--green);color:#fff;box-shadow:0 3px 0 var(--ink)}
+body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
 </style>
 </head>
 <body>
@@ -339,9 +392,12 @@ body.view #tasks .tt{border-bottom-color:transparent}
         </div>
       </div>
       <div id="tasks"></div>
+      <div class="futoday" id="fuToday" hidden></div>
       <div class="fields">
         <div class="field"><label for="dayBv">今天新增的 BV</label><input id="dayBv" type="number" inputmode="numeric" min="0" placeholder="0"></div>
-        <div class="field"><label for="dayNote">今天的小筆記</label><textarea id="dayNote" placeholder="今天最開心的一件事、明天想聯絡的人…"></textarea></div>
+        <div class="field"><label for="dayNote">今天的小筆記</label><textarea id="dayNote" placeholder="今天最開心的一件事、明天想聯絡的人…"></textarea>
+          <div class="airow"><button type="button" id="noteAi">AI 整理到名單和行程</button><span id="noteAiMsg"></span></div>
+          <div class="notePlan" id="notePlan" hidden></div></div>
       </div>
       <div class="ai" id="aiDay"><img src="img/cat-wave.png" alt="">
         <div><div class="who">達爾文說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
@@ -370,6 +426,7 @@ body.view #tasks .tt{border-bottom-color:transparent}
   <div class="page" data-page="list" hidden>
     <section class="card" aria-label="名單">
       <div class="sec-head"><h2>名單</h2><button class="addbtn" id="pAdd">＋ 新增</button></div>
+      <div class="fustats" id="fuStats"></div>
       <div class="chips" id="pFilters"></div>
       <div class="ai" id="aiList"><img src="img/cat-read.png" alt="">
         <div><div class="who">達爾文說</div><p id="aiListText"></p></div></div>
@@ -446,6 +503,11 @@ body.view #tasks .tt{border-bottom-color:transparent}
 <div class="sheet-bg" id="sheet" hidden>
   <form class="sheet" id="pForm" autocomplete="off">
     <div class="sheet-top"><h2 id="pTitle">新增聯絡人</h2><button type="button" id="pClose" aria-label="關閉">×</button></div>
+    <div class="aifill">
+      <label for="pRaw">貼一段描述，讓達爾文幫你填表</label>
+      <textarea id="pRaw" placeholder="例：今天跟國中同學小美吃飯，她 35 歲住新竹，在銀行上班，已婚有兩個小孩，最近想減重，也想存錢買房。下週三約她喝咖啡，LINE 是 mei0312。"></textarea>
+      <div class="airow"><button type="button" id="pAi">AI 分析並填入</button><span id="pAiMsg"></span></div>
+    </div>
     <div class="grp">基本資料</div>
     <div class="f2">
       <div class="field"><label for="pName">姓名 *</label><input id="pName" required placeholder="王小明"></div>
@@ -473,9 +535,20 @@ body.view #tasks .tt{border-bottom-color:transparent}
       <div class="field"><label for="pContact">聯絡方式</label><input id="pContact" placeholder="LINE／電話"></div>
       <div class="field"><label for="pDate">會面日期</label><input id="pDate" type="date"></div>
     </div>
+    <div class="grp">跟進時間軸</div>
+    <div class="fulog">
+      <div class="field"><label for="fDate">日期</label><input id="fDate" type="date"></div>
+      <div class="field"><label for="fType">做了什麼</label><select id="fType"></select></div>
+      <div class="field"><label for="fResult">結果</label><select id="fResult"></select></div>
+      <div class="field"><label for="fProd">分享的產品</label><input id="fProd" placeholder="例：全新生活即享雪克"></div>
+      <div class="field wide"><label for="fNote">這次的重點</label><input id="fNote" placeholder="例：對減重有興趣，擔心價格"></div>
+      <button type="button" class="go" id="fAdd">記錄這次接觸，排出跟進</button>
+    </div>
+    <p class="share-hint" id="fMsg" style="text-align:left;margin:6px 0 0"></p>
+    <ul class="tl" id="fTl"></ul>
     <div class="grp">備註</div>
     <div class="field"><textarea id="pNote" aria-label="備註" style="min-height:90px" placeholder="個性、背景故事、上次談話重點、對方的顧慮…"></textarea></div>
-    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="submit" class="save">儲存</button></div>
+    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="button" class="copybtn" id="pCopy">複製給 Leader</button><button type="submit" class="save">儲存</button></div>
   </form>
 </div>
 
@@ -626,6 +699,64 @@ const CONFIG = {
     {name:'抹茶獎狀', bg:'', color:'#DDEFC0', mark:'#C6E29C', accent:'#5E8F2A', cat:'head',   layout:'B', pattern:'stripe'},
     {name:'粉紅泡泡', bg:'', color:'#FFD3CE', mark:'#FFFFFF', accent:'#E0655C', cat:'cat-wave', layout:'A', pattern:'bubble'},
   ],
+  /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
+  follow: {
+    types: ['分享產品','健康問卷','分享商機','聽 UBP','上 B5','電話關心','見面聊天','傳 LINE'],
+    results: ['有興趣','考慮中','沒興趣','未接／未回','已購買','已加入'],
+    byType: {
+      '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
+      /* 問卷當天＝第 1 天：跟對方一起看結果、挑 2–4 款產品、存好推薦、約好下次跟進 */
+      '健康問卷': [
+        [2,'第 3 天關懷：確認收到產品、提醒用法','傳訊息確認是否收到產品；提醒正確、持續使用的方法；問「使用上有沒有遇到什麼問題呢？」'],
+        [6,'第 7 天體驗回饋：問感受、分享見證','問有沒有感覺到好處；分享這個產品的見證或顧客評價；鼓勵持續使用，提醒產品需要時間發揮效果'],
+        [13,'第 14 天持續追蹤：確認持續使用','確認還在正確、持續地使用；再問一次體驗；分享近期的文章、影片或見證，保持互動'],
+        [20,'第 21 天回購與擴展：問回購、推薦新產品、問轉介紹','問要不要再訂購（回購時機）；推薦其他產品、增加購物類別；分享文章、影片或見證；問有沒有朋友也適合（轉介紹）'],
+      ],
+      /* ABC 跟進法：分享當天＝第 1 天，30–90 天試做，不急著要對方加入；每一次都要約好下一次 */
+      '分享商機': [
+        [1,'第 2 天立即跟進：傳資料、看完影片馬上打電話','傳美安公司 PDF 或線上事業工具；約好對方看完影片後立刻致電；興趣中至高→約二對一、UBP 或線上影片介紹；興趣不大→約二對一或電話取得推薦人選，或介紹產品與夥伴商店'],
+        [4,'第一次跟進會面（第 3–7 天）：二對一、試用產品','你＋資深夥伴＋對方二對一；讓他試用產品、做市場測試；介紹獨家產品；銷售下一場 GMTSS 門票；約好下一次'],
+        [10,'第二次跟進會面（第 7–14 天）：體驗、見證、開始列名單','問產品使用體驗；分享見證／顧客評價；引導他列潛在人選名單；教他怎麼介紹事業機會；約好下一次'],
+        [17,'第三次跟進會面（第 14–21 天）：檢視名單、陪打電話','檢視名單（目標至少 60 位）；陪他打電話給潛在人選；在他那邊開試做會議；讓他展示「兩到三年計畫」；約好下一次'],
+        [25,'第四次跟進會面（第 21–30 天）：讓他主導展示','讓他主導一段事業計畫、你從旁補充；陪他完成居家購物清單（轉消費為收入）；確認已買下次 GMTSS 門票；約好下一次'],
+        [29,'第 30 天：進入深度複製（30–60 天）','每週至少兩次二對一或一對一；每週在新人那邊拓展一個 ABC 層次；陪他參加區域訓練；確認每週聽兩個錄音檔／影片、讀超連鎖手冊、開始建立「基本十顧客，七人強」'],
+        [89,'第 90 天：三個月進展檢視','檢視 T1000 表格是否已交、自動購貨是否生效、每月累積的基本要求、目標與事業計畫進度；用「基本十顧客，七人強」和第一張 BV 佣金支票看進步'],
+      ],
+      '聽 UBP':   [
+        [1,'隔天跟進：聊 UBP 感想、約二對一','趁熱度聊感想、解答疑問；約二對一會面（你＋資深夥伴），讓他試用產品；約好下一次'],
+        [6,'第二次跟進：體驗、見證、開始列名單','問產品使用體驗；分享見證；引導他列潛在人選名單；教他怎麼介紹事業機會'],
+        [13,'第三次跟進：檢視名單、陪打電話','檢視名單（目標至少 60 位）；陪他打電話；讓他展示「兩到三年計畫」'],
+        [21,'第四次跟進：讓他主導展示','讓他主導一段事業計畫；陪他完成居家購物清單；確認已買下次 GMTSS 門票'],
+      ],
+      '上 B5':    [[3,'討論加入與目標設定'],[7,'約一次一對一規劃']],
+      '電話關心': [[7,'再關心一次近況']],
+      '見面聊天': [[3,'跟進見面聊到的事']],
+      '傳 LINE':  [[3,'看有沒有回覆，再聊一次']],
+    },
+    /* 當天就要做的事：記錄這類接觸時提醒你 */
+    today: {
+      '健康問卷': '今天記得：跟對方一起看結果、挑 2–4 款產品、存好推薦，並約好下次跟進的時間。',
+      '分享商機': '今天記得：用評估法接觸，讓對方「評估」不是「加入」。興趣中至高→約三方通話或會面（二對一、HBP、UBP）；興趣不大→用影片取得推薦人選，或介紹夥伴商店。一定要約好下次跟進，而且排在兩三天內。',
+    },
+    /* 某種接觸＋某個結果的特別安排（優先於下面的 byResult） */
+    byCombo: {
+      '分享商機|沒興趣': [[1,'傳影片或介紹夥伴商店，請他推薦人選','興趣不大時：用影片展示取得推薦人選，或介紹產品、夥伴商店'],[30,'過一個月再輕鬆問候']],
+    },
+    /* 結果比類型優先：選了這些結果，就改用這裡的跟進 */
+    byResult: {
+      '未接／未回': [[1,'再聯絡一次']],
+      '沒興趣':     [[30,'過一個月再輕鬆問候']],
+      '已購買':     [
+        [2,'第 3 天關懷：確認收到產品、提醒用法','傳訊息確認是否收到產品；提醒正確、持續使用的方法；問「使用上有沒有遇到什麼問題呢？」'],
+        [6,'第 7 天體驗回饋：問感受、分享見證','問有沒有感覺到好處；分享這個產品的見證或顧客評價；鼓勵持續使用'],
+        [13,'第 14 天持續追蹤：確認持續使用','確認還在正確、持續地使用；分享近期的文章、影片或見證'],
+        [20,'第 21 天回購與擴展：問回購、推薦新產品、問轉介紹','問要不要再訂購；推薦其他產品；問有沒有朋友也適合'],
+      ],
+      '已加入':     [[1,'陪他設定自動購貨、報名 NUOT'],[7,'陪他列名單']],
+    },
+  },
+  /* 複製給 Leader 時，最後一行署名 */
+  reportName: '怡婷',   // ← 改成署名要顯示的名字
   /* 名單表單的選項 */
   people: {
     status: ['潛在','邀約中','已加入','暫緩'],
@@ -874,6 +1005,7 @@ function renderDay(rebuild){
   $('dayTitle').textContent = `${md(selDay)} 星期${WD[selDay.getDay()]}` + (+selDay===+TODAY ? '　今天' : '');
   $('dayMeta').textContent = r.tasks.length ? `挑戰第 ${dn} 天　完成 ${done} / ${r.tasks.length}` : `挑戰第 ${dn} 天　還沒寫任務，先填一件吧`;
   $('dayBar').style.width = (p*100)+'%';
+  renderFuToday();
   $('cheer').classList.toggle('show', r.tasks.length>0 && p===1);
   $('shareDay').hidden = done === 0;
   $('dayCat').src = 'img/cat-' + (!r.tasks.length ? 'sleep' : p===1 ? 'cheer' : done ? 'ball' : 'stretch') + '.png';
@@ -935,6 +1067,82 @@ $('tasks').addEventListener('focusout', e => { if (e.target.id==='task-new' && e
 $('dayBv').addEventListener('change', e => { const v = +e.target.value||0; if (v>0) darwin('bv',{bv:v}); });
 $('dayBv').addEventListener('input', e => { if (VIEW) return; dayRec(selDay).bv = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
 $('dayNote').addEventListener('input', e => { if (VIEW) return; dayRec(selDay).note = e.target.value; save(); });
+/* 小筆記 → AI 找出提到的人和約好的行程，先給你勾選確認，再寫進名單和那天的任務 */
+let notePlan = null;
+const P_KEYS = ['sex','age','city','rel','family','job','fun','money','health','dream','status','contact','date'];
+const P_LABEL = {sex:'性別',age:'年齡',city:'居住地點',rel:'關係',family:'家庭',job:'職業',fun:'休閒',money:'財務',health:'健康',dream:'夢想',status:'狀態',contact:'聯絡方式',date:'會面日期'};
+const findPerson = n => { n = String(n||'').trim(); return n ? S.people.findIndex(x => x.name === n || x.name.includes(n) || n.includes(x.name)) : -1; };
+function cleanFields(f){
+  const o = {};
+  for (const k of P_KEYS){ const v = f && f[k] != null ? String(f[k]).trim() : ''; if (!v) continue;
+    if (PC[k] && !PC[k].includes(v)) continue;
+    if (k === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(v)) continue;
+    if (k === 'sex' && !['女','男'].includes(v)) continue;
+    o[k] = v; }
+  return o;
+}
+const touchOf = x => { const t = x && x.touch; return t && FL.types.includes(t.type) ? {type: t.type, result: FL.results.includes(t.result) ? t.result : '', product: String(t.product || '').trim()} : null; };
+function drawNotePlan(){
+  const P = notePlan; if (!P || (!P.people.length && !P.tasks.length)){ $('notePlan').hidden = true; return; }
+  let h = '';
+  if (P.people.length){ h += '<h4>名單</h4>' + P.people.map((x,i) => {
+    const ex = findPerson(x.name) >= 0, f = cleanFields(x.fields);
+    const bits = Object.entries(f).map(([k,v]) => `${P_LABEL[k]}：${esc(v)}`).concat(x.fields && x.fields.note ? ['備註：'+esc(x.fields.note)] : []);
+    const tc = touchOf(x), rs = tc ? rulesFor(tc.type, tc.result) : [];
+    const plan = tc ? `<small style="color:var(--ink)"><b>接觸：${esc(tc.type)}${tc.result?'・'+esc(tc.result):''}${tc.product?'・'+esc(tc.product):''}</b>${rs.length ? '　自動排好跟進：' + rs.map(([n,t]) => `<span style="display:block">・${md(new Date(addDays(key(selDay), n)+'T00:00'))}　${esc(t.split('：')[0])}</span>`).join('') : ''}</small>` : '';
+    return `<label><input type="checkbox" data-np="${i}" checked><span><b>${ex?'更新':'新增'}　${esc(x.name)}</b><small>${bits.join('｜') || '只記一筆備註'}</small>${plan}</span></label>`; }).join(''); }
+  if (P.tasks.length){ h += '<h4 style="margin-top:8px">行程（加進那天的任務）</h4>' + P.tasks.map((t,i) => {
+    const ok = /^\d{4}-\d{2}-\d{2}$/.test(t.date||'');
+    return `<label><input type="checkbox" data-nt="${i}" ${ok?'checked':'disabled'}><span><b>${ok?md(new Date(t.date+'T00:00')):'日期不明'}</b>　${esc(t.text||'')}</span></label>`; }).join(''); }
+  h += '<div class="acts"><button type="button" class="go" id="noteApply">套用勾選的項目</button><button type="button" id="noteCancel">取消</button></div>';
+  $('notePlan').innerHTML = h; $('notePlan').hidden = false;
+}
+$('noteAi').addEventListener('click', async () => { if (VIEW) return;
+  const text = $('dayNote').value.trim();
+  if (!text){ $('noteAiMsg').textContent = '先寫一點小筆記'; $('dayNote').focus(); return; }
+  const btn = $('noteAi'); btn.disabled = true; $('noteAiMsg').textContent = '達爾文整理中，最多等 1 分鐘…'; $('notePlan').hidden = true;
+  try {
+    const r = await api('ai/note', {method:'POST', body: JSON.stringify({text, today: key(selDay), options: {...PC, types: FL.types, results: FL.results}, names: S.people.map(x => x.name)})});
+    if (r.status === 401){ $('noteAiMsg').textContent = '要先輸入通關碼才能用 AI'; return; }
+    const j = await r.json();
+    if (j.error){ $('noteAiMsg').textContent = j.error; return; }
+    notePlan = {people: j.people || [], tasks: (j.tasks || []).filter(t => t && t.text)};
+    $('noteAiMsg').textContent = (notePlan.people.length || notePlan.tasks.length) ? '勾選要套用的項目' : '筆記裡沒有找到人或行程';
+    drawNotePlan();
+  } catch(e){ $('noteAiMsg').textContent = '連線失敗，請稍後再試'; }
+  finally { btn.disabled = false; }
+});
+$('notePlan').addEventListener('click', e => {
+  if (e.target.id === 'noteCancel'){ notePlan = null; $('notePlan').hidden = true; $('noteAiMsg').textContent = ''; return; }
+  if (e.target.id !== 'noteApply' || !notePlan || VIEW) return;
+  const stamp = md(selDay) + '：';
+  let np = 0, nt = 0, nf = 0;
+  document.querySelectorAll('#notePlan [data-np]:checked').forEach(c => {
+    const x = notePlan.people[+c.dataset.np], f = cleanFields(x.fields), memo = x.fields && x.fields.note ? stamp + x.fields.note : '';
+    const i = findPerson(x.name);
+    let p;
+    if (i >= 0){
+      p = S.people[i];
+      for (const k in f){ if (k === 'date' || k === 'status' || !p[k]) p[k] = f[k]; }   /* 會面日期和狀態用新的；其他只補空格 */
+      if (memo) p.note = p.note ? p.note + '\n' + memo : memo;
+    } else {
+      p = {name: x.name, side:'未定', status: f.status || (f.date ? '邀約中' : PC.status[0]), ...f, note: memo};
+      S.people.unshift(p);
+    }
+    const tc = touchOf(x);   /* 筆記裡有接觸（分享商機、分享產品、問卷…）就記一筆，照跟進規則排好後面的日期 */
+    if (tc){ const log = {d: key(selDay), ...tc, note: x.fields && x.fields.note ? x.fields.note : ''}; p.log = (p.log || []).concat(log); nf += planFollow(p, log); }
+    np++;
+  });
+  document.querySelectorAll('#notePlan [data-nt]:checked').forEach(c => {
+    const t = notePlan.tasks[+c.dataset.nt], d = new Date(t.date + 'T00:00');
+    if (isNaN(d)) return;
+    const rec = dayRec(d);
+    if (!rec.tasks.some(x => x.t === t.text)){ rec.tasks.push({t: t.text, d:false}); nt++; }
+  });
+  save(); render(); renderPeople();
+  notePlan = null; $('notePlan').hidden = true;
+  $('noteAiMsg').textContent = `已更新名單 ${np} 位` + (nf ? `、排好 ${nf} 個跟進` : '') + (nt ? `、加入 ${nt} 件行程` : '');
+});
 $('lineWhere').addEventListener('change', e => { S.line.where = e.target.value; save(); renderLine(); });
 ['lineAm','linePm'].forEach((id,k) => {
   const el = $(id), from = k ? 17 : 6;
@@ -1094,17 +1302,43 @@ $('conds').addEventListener('click', e => { const b = e.target.closest('[data-sc
 /* ---------- 名單 ---------- */
 const PC = CONFIG.people;
 let pFilter = '全部', pEdit = -1, draft = {};
+/* ---------- 跟進：log＝接觸紀錄，fu＝排好的跟進 ---------- */
+const FL = CONFIG.follow;
+const tk = () => key(TODAY);
+const addDays = (k, n) => key(add(new Date(k + 'T00:00'), n));
+const fuOpen = p => (p.fu || []).filter(f => !f.done).sort((a,b) => a.d < b.d ? -1 : 1);
+const nextFu = p => fuOpen(p)[0];
+const dueList = () => S.people.flatMap((p,i) => fuOpen(p).filter(f => f.d <= tk()).map(f => ({p, i, f}))).sort((a,b) => a.f.d < b.f.d ? -1 : 1);
+const lateDays = k => Math.round((TODAY - new Date(k + 'T00:00')) / 864e5);
+const rulesFor = (type, result) => (FL.byCombo && FL.byCombo[type + '|' + result]) || FL.byResult[result] || FL.byType[type] || [];
+function planFollow(p, log){
+  const rules = rulesFor(log.type, log.result);
+  (p.fu || []).forEach(f => { if (!f.done){ f.done = true; f.auto = 1; } });   /* 新紀錄取代舊的待跟進 */
+  p.fu = (p.fu || []).concat(rules.map(([n, t, x]) => ({d: addDays(log.d, n), t: t + (log.product && /產品|回購|試用|使用/.test(t) ? `（${log.product}）` : ''), x: x || '', done:false})));
+  if (log.result === '已加入') p.status = '已加入';
+  else if (['分享商機','聽 UBP','上 B5'].includes(log.type) && (!p.status || p.status === PC.status[0])) p.status = '邀約中';
+  return rules.length;
+}
 function renderPeople(){
+  const due = dueList(), wkEnd = addDays(tk(), 7);
+  const wk = S.people.filter(p => fuOpen(p).some(f => f.d > tk() && f.d <= wkEnd)).length;
+  $('fuStats').innerHTML = [['all','名單',S.people.length,''],['due','今天跟進',new Set(due.map(x => x.i)).size, due.length?'hot':''],['week','7 天內',wk,''],['join','已合作',S.people.filter(p => p.status==='已加入').length,'']]
+    .map(([k,l,n,c]) => `<button type="button" class="${c} ${pFilter===('@'+k)?'on':''}" data-pf="@${k}"><span>${l}</span><b>${n}</b></button>`).join('');
   $('pFilters').innerHTML = ['全部', ...PC.status].map(f => {
     const n = f==='全部' ? S.people.length : S.people.filter(x => x.status===f).length;
     return `<button class="chip ${f===pFilter?'on':''}" data-pf="${f}">${f} ${n}</button>`; }).join('');
-  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => pFilter==='全部' || x.status===pFilter);
+  const match = x => pFilter==='全部' || pFilter==='@all' || x.status===pFilter
+    || (pFilter==='@due' && fuOpen(x).some(f => f.d <= tk()))
+    || (pFilter==='@week' && fuOpen(x).some(f => f.d > tk() && f.d <= wkEnd))
+    || (pFilter==='@join' && x.status==='已加入');
+  const rows = S.people.map((x,i) => [x,i]).filter(([x]) => match(x))
+    .sort((a,b) => { const fa = nextFu(a[0]), fb = nextFu(b[0]); return (fa ? fa.d : '9') < (fb ? fb.d : '9') ? -1 : (fa ? fa.d : '9') > (fb ? fb.d : '9') ? 1 : a[1]-b[1]; });
   $('pList').innerHTML = rows.length ? rows.map(([x,i]) => {
     const meta = [x.side, x.job, x.city, x.rel].filter(Boolean).map(esc).join('・');
     const memo = [x.date ? '會面 '+x.date : '', x.note].filter(Boolean).join('　');
     return `<button class="person" data-pe="${i}"><h3>${esc(x.name)} <small>${x.age?esc(x.age)+'歲':''} ${esc(x.sex||'')}</small></h3>
       <span class="st s${PC.status.indexOf(x.status)}">${esc(x.status||'未分類')}</span>
-      ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}</button>`; }).join('')
+      ${meta?`<span class="meta">${meta}</span>`:''}${memo?`<span class="memo">${esc(memo)}</span>`:''}${(f => f ? `<span class="nf ${f.d<=tk()?'due':''}">${f.d<tk()?'逾期 '+lateDays(f.d)+' 天・':f.d===tk()?'今天・':md(new Date(f.d+'T00:00'))+'・'}${esc(f.t)}</span>` : '')(nextFu(x))}</button>`; }).join('')
     : `<div class="empty"><img src="img/cat-sleep.png" alt=""><span>${S.people.length ? '這個分類還沒有人。' : '名單還是空的，按「＋ 新增」寫下第一位想分享的人。'}</span></div>`;
 }
 const P_TEXT = {pName:'name',pSex:'sex',pAge:'age',pCity:'city',pFamily:'family',pJob:'job',pFun:'fun',pMoney:'money',pHealth:'health',pDream:'dream',pContact:'contact',pDate:'date',pNote:'note'};
@@ -1118,14 +1352,127 @@ function openSheet(i){
   $('pTitle').textContent = i>=0 ? '編輯聯絡人' : '新增聯絡人';
   $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
   for (const id in P_TEXT) $(id).value = draft[P_TEXT[id]] ?? '';
+  $('pRaw').value = ''; $('pAiMsg').textContent = '';
+  $('fDate').value = tk(); $('fType').value = FL.types[0]; $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = ''; $('fMsg').textContent = '';
+  drawTl();
   drawChips(); $('sheet').hidden = false; document.body.classList.add('lock'); $('pForm').scrollTop = 0;
 }
+[['fType',FL.types,false],['fResult',FL.results,true]].forEach(([id,opts,blank]) => { if (blank) $(id).add(new Option('（選填）','')); opts.forEach(o => $(id).add(new Option(o))); });
+function drawTl(){
+  const items = (draft.log || []).map((l,i) => ({k:'log', d:l.d, i, l})).concat((draft.fu || []).map((f,i) => ({k:'fu', d:f.d, i, f})))
+    .filter(x => !(x.k==='fu' && x.f.auto))
+    .sort((a,b) => a.d < b.d ? 1 : a.d > b.d ? -1 : (a.k==='fu' ? -1 : 1));
+  $('fTl').innerHTML = items.length ? items.map(x => {
+    const day = md(new Date(x.d + 'T00:00'));
+    if (x.k === 'log'){ const l = x.l;
+      return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}</li>`; }
+    const f = x.f, late = !f.done && f.d < tk();
+    return `<li class="fu ${f.done?'ok':''} ${late?'late':''}"><span class="dt">${day}</span><span class="t">跟進：${esc(f.t)}</span>${f.x?`<small>${esc(f.x)}</small>`:''}${late?`<small>逾期 ${lateDays(f.d)} 天</small>`:''}
+      <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
+    : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
+}
+function keepPerson(){ if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
+$('fAdd').addEventListener('click', () => { if (VIEW) return;
+  const log = {d: $('fDate').value || tk(), type: $('fType').value, result: $('fResult').value, product: $('fProd').value.trim(), note: $('fNote').value.trim()};
+  draft.log = (draft.log || []).concat(log);
+  const n = planFollow(draft, log);
+  drawChips(); drawTl(); keepPerson();
+  $('fResult').value = ''; $('fProd').value = ''; $('fNote').value = '';
+  const nx = nextFu(draft);
+  $('fMsg').textContent = n ? `已排好 ${n} 個跟進，下一次：${md(new Date(nx.d+'T00:00'))} ${nx.t}` + (pEdit<0 ? '（記得按儲存）' : '') : '已記錄。';
+  if (FL.today && FL.today[log.type]) $('fMsg').textContent += '　' + FL.today[log.type];
+});
+$('fTl').addEventListener('click', e => { if (VIEW) return;
+  const a = e.target.closest('[data-fd]'), b = e.target.closest('[data-fx]');
+  if (a){ const f = draft.fu[+a.dataset.fd]; f.done = !f.done; delete f.auto; }
+  else if (b) draft.fu.splice(+b.dataset.fx, 1);
+  else return;
+  drawTl(); keepPerson();
+});
+/* 日計劃：今天要跟進的人 */
+function renderFuToday(){
+  const box = $('fuToday');
+  if (+selDay !== +TODAY){ box.hidden = true; return; }
+  const due = dueList();
+  if (!due.length){ box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `<h3>今天要跟進 ${due.length} 位</h3>` + due.map(({p,i,f}) => {
+    const late = f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
+    return `<div class="row"><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${esc(f.t)}${f.x?`<small style="display:block;color:var(--ink-soft);font-size:12px">${esc(f.x)}</small>`:''}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">完成</button></div>`; }).join('');
+}
+$('fuToday').addEventListener('click', e => {
+  const o = e.target.closest('[data-fok]'), w = e.target.closest('[data-fp]');
+  if (o && !VIEW){ const [i,j] = o.dataset.fok.split(':').map(Number); S.people[i].fu[j].done = true; save(); renderFuToday(); renderPeople(); }
+  else if (w){ setTab('list'); openSheet(+w.dataset.fp); }
+});
+/* 一鍵複製：基本資料＋接觸紀錄＋接下來的跟進，排成可以直接貼到 LINE 的文字 */
+function personReport(){
+  const v = {}; for (const id in P_TEXT) v[P_TEXT[id]] = $(id).value.trim();
+  const d = {...draft, ...v};
+  const dd = k => md(new Date(k + 'T00:00'));
+  const join = (arr, sep) => arr.filter(Boolean).join(sep);
+  const L = [`【名單報告】${d.name || '（未填姓名）'}`];
+  const put = x => { if (x) L.push(x); };
+  put(join([d.status && '狀態：' + d.status, d.side && d.side !== '未定' && '位置：' + d.side, d.rel && '關係：' + d.rel], '｜'));
+  put(join([d.sex, d.age && d.age + ' 歲', d.city, d.job], '・'));
+  put(join([d.family && '家庭：' + d.family, d.money && '財務：' + d.money, d.health && '健康：' + d.health], '｜'));
+  if (d.fun) L.push('休閒：' + d.fun);
+  if (d.dream) L.push('夢想：' + d.dream);
+  put(join([d.contact && '聯絡：' + d.contact, d.date && '下次會面：' + dd(d.date)], '｜'));
+  if (d.note) L.push('備註：' + d.note.replace(/\n+/g, '；'));
+  const logs = (d.log || []).slice().sort((a,b) => a.d < b.d ? -1 : 1);
+  if (logs.length){ L.push('', '📒 接觸紀錄');
+    logs.forEach(l => L.push(`${dd(l.d)}　${join([l.type, l.result, l.product], '・')}${l.note ? '　' + l.note : ''}`)); }
+  const done = (d.fu || []).filter(f => f.done && !f.auto).sort((a,b) => a.d < b.d ? -1 : 1);
+  if (done.length){ L.push('', '✅ 已完成的跟進'); done.forEach(f => L.push(`${dd(f.d)}　${f.t}`)); }
+  const open = fuOpen(d);
+  if (open.length){ L.push('', '⏭ 接下來的跟進');
+    open.forEach(f => L.push(`${dd(f.d)}　${f.t}${f.d < tk() ? `（逾期 ${lateDays(f.d)} 天）` : f.d === tk() ? '（今天）' : ''}`)); }
+  L.push('', `— ${CONFIG.reportName || CONFIG.name}　${md(TODAY)} 整理`);
+  return L.filter((x, i, a) => x !== '' || (a[i-1] !== '' && i > 0)).join('\n');
+}
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch(e){ const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch(_){} ta.remove(); return ok; }
+}
+$('pCopy').addEventListener('click', async () => {
+  const b = $('pCopy'), t = personReport();
+  b.textContent = (await copyText(t)) ? '已複製！去 LINE 貼上' : '複製失敗';
+  setTimeout(() => b.textContent = '複製給 Leader', 2000);
+});
 const closeSheet = () => { $('sheet').hidden = true; document.body.classList.remove('lock'); };
 $('pAdd').addEventListener('click', () => openSheet(-1));
+/* AI 分析描述：只填目前還空著的欄位，備註則接在後面，不會蓋掉你已經寫的內容 */
+$('pAi').addEventListener('click', async () => {
+  const text = $('pRaw').value.trim();
+  if (!text){ $('pAiMsg').textContent = '先貼上一段描述'; $('pRaw').focus(); return; }
+  const btn = $('pAi'); btn.disabled = true; $('pAiMsg').textContent = '達爾文分析中，最多等 1 分鐘…';
+  try {
+    const r = await api('ai/person', {method:'POST', body: JSON.stringify({text, today: key(TODAY), options: PC})});
+    const j = await r.json();
+    if (r.status === 401){ $('pAiMsg').textContent = '要先輸入通關碼才能用 AI'; return; }
+    if (!j.fields){ $('pAiMsg').textContent = j.error || '分析失敗，請再試一次'; return; }
+    const f = j.fields; let n = 0;
+    for (const id in P_TEXT){
+      const k = P_TEXT[id], v = f[k] == null ? '' : String(f[k]).trim();
+      if (!v || k === 'note') continue;
+      const el = $(id);
+      if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === v)) continue;
+      if (k === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(v)) continue;
+      if (!el.value){ el.value = v; n++; }
+    }
+    if (f.note){ $('pNote').value = $('pNote').value ? $('pNote').value + '\n' + f.note : f.note; n++; }
+    ['rel','status','side'].forEach(k => { const v = f[k]; if (v && PC[k].includes(v) && (!draft[k] || (k==='status' && pEdit<0) || (k==='side' && draft[k]==='未定'))){ draft[k] = v; n++; } });
+    drawChips();
+    $('pAiMsg').textContent = n ? `填好 ${n} 個欄位，請檢查一下再儲存` : '沒找到可以填的資料';
+  } catch(e){ $('pAiMsg').textContent = '連線失敗，請稍後再試'; }
+  finally { btn.disabled = false; }
+});
 $('pClose').addEventListener('click', closeSheet);
 $('sheet').addEventListener('click', e => { if (e.target.id==='sheet') closeSheet(); });
 document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeSheet(); closeShare(); } });
-$('pFilters').addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = b.dataset.pf; renderPeople(); } });
+['pFilters','fuStats'].forEach(id => $(id).addEventListener('click', e => { const b = e.target.closest('[data-pf]'); if (b){ pFilter = (pFilter === b.dataset.pf && b.dataset.pf[0]==='@') ? '全部' : b.dataset.pf; renderPeople(); } }));
 $('pList').addEventListener('click', e => { const b = e.target.closest('[data-pe]'); if (b) openSheet(+b.dataset.pe); });
 $('pForm').addEventListener('click', e => { const b = e.target.closest('[data-pv]'); if (!b) return;
   const k = b.parentNode.dataset.g; draft[k] = draft[k]===b.dataset.pv ? '' : b.dataset.pv; drawChips(); });

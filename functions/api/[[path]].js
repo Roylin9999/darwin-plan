@@ -77,7 +77,11 @@ function buildMessage(S, kind, env) {
     const body = !tasks.length ? '今天還沒寫任務也沒關係，打開日誌填一件最小的事，我陪你開始。'
       : !left.length ? `今天的 ${tasks.length} 件事全部完成了！我的主人太棒了。`
       : (done.length ? `已經完成 ${done.length} 件了，好棒！還有這些可以慢慢來：` : '今天可以做的事：') + `\n${list(left)}`;
-    return `${head}\n\n${body}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}\n\n${cheer}`;
+    /* 名單上今天要跟進的人（含逾期） */
+    const due = (S.people || []).flatMap(p => (p.fu || []).filter(f => !f.done && f.d <= now.key).map(f => ({ n: p.name, f })))
+      .sort((a, b) => a.f.d < b.f.d ? -1 : 1);
+    const fu = due.length ? `\n\n今天要跟進的人：\n${due.slice(0, 8).map(x => `・${x.n}：${x.f.t}${x.f.d < now.key ? `（逾期 ${dayDiff(x.f.d, now.key)} 天）` : ''}`).join('\n')}${due.length > 8 ? `\n…還有 ${due.length - 8} 位` : ''}` : '';
+    return `${head}\n\n${body}${fu}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}\n\n${cheer}`;
   }
   if (kind === 'pm') {
     const hello = `🐾 ${name}晚安，今天辛苦了`;
@@ -269,16 +273,16 @@ async function cheerIfAllDone(env, S) {
 }
 
 /* ---------- MiniMax（OpenAI 相容的 chat/completions） ---------- */
-async function minimax(env, system, user) {
+async function minimax(env, system, user, maxTokens = 1000, timeoutMs = 25000) {
   const base = (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1').replace(/\/+$/, '');
   const r = await fetch(base + '/chat/completions', {
     method: 'POST',
-    signal: AbortSignal.timeout(25000),          // 最多等 25 秒
+    signal: AbortSignal.timeout(timeoutMs),      // 預設最多等 25 秒；填表分析等 60 秒
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.MINIMAX_API_KEY },
     body: JSON.stringify({
       model: env.MINIMAX_MODEL || 'MiniMax-M3',
       messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-      max_tokens: 1000,
+      max_tokens: maxTokens,
     }),
   });
   if (!r.ok) throw new Error(`MiniMax ${r.status}: ${(await r.text()).slice(0, 200)}`);
@@ -294,6 +298,69 @@ async function aiReply(request, env) {
   const user = `情境：${EVENT_LABEL[b.event] || b.event}\n細節：${JSON.stringify(b.detail || {})}\n目前進度：${JSON.stringify(b.state || {})}`;
   try { return json({ reply: await minimax(env, b.persona || PERSONA, user) }); }
   catch (e) { return json({ reply: null, error: e.message }); }
+}
+
+/* ---------- AI 幫名單填表：把一段描述拆進各個欄位 ---------- */
+async function aiPerson(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const text = String(b.text || '').slice(0, 3000);
+  if (!text.trim()) return json({ error: '請先貼上一段描述' });
+  const o = b.options || {};
+  const pick = k => (o[k] || []).join('／');
+  const system = `你是整理人脈名單的助手。使用者會貼一段關於某個人的描述（可能是對話紀錄、筆記或口語敘述），請把資訊拆進下列欄位，只輸出一個 JSON 物件，不要任何其他文字或程式碼框。
+欄位：
+- name：姓名或稱呼
+- sex：只能是「女」「男」或空字串
+- age：數字；只知道大概（例如三十幾歲）就填估計的整數；不知道填空字串
+- city：居住地點
+- rel：關係程度，只能是 ${pick('rel')} 其中之一，或空字串
+- family：家庭狀況，只能是 ${pick('family')} 其中之一，或空字串
+- job：職業工作
+- fun：休閒娛樂
+- money：財務狀況，只能是 ${pick('money')} 其中之一，或空字串
+- health：健康狀況，只能是 ${pick('health')} 其中之一，或空字串
+- dream：未來夢想／目標
+- status：跟進狀態，只能是 ${pick('status')} 其中之一，或空字串
+- side：只能是 ${pick('side')} 其中之一，或空字串；描述沒提到就空字串
+- contact：LINE ID 或電話
+- date：約好見面的日期，格式 YYYY-MM-DD；今天是 ${b.today || ''}，「下週三」這類說法請換算成日期；沒有就空字串
+- note：其他值得記下的重點（個性、背景故事、談話重點、顧慮、可以分享的產品方向），用繁體中文條列成 1 到 4 句，用「；」分隔
+規則：描述裡沒有提到的欄位一律填空字串，不要猜測或編造。全部用繁體中文。`;
+  try {
+    const raw = await minimax(env, system, text, 4000, 60000);
+    const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
+    if (!m) return json({ error: 'AI 回覆看不懂，請再試一次', raw: raw.slice(0, 300) });
+    return json({ fields: JSON.parse(m[0]) });
+  } catch (e) { return json({ error: 'AI 分析失敗：' + e.message }); }
+}
+
+/* ---------- AI 整理小筆記：找出提到的人和約好的行程 ---------- */
+async function aiNote(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const text = String(b.text || '').slice(0, 3000);
+  if (!text.trim()) return json({ error: '小筆記是空的' });
+  const o = b.options || {}, pick = k => (o[k] || []).join('／');
+  const names = (b.names || []).slice(0, 300).join('、') || '（目前名單是空的）';
+  const system = `你是整理人脈名單和行程的助手。使用者會給你一段當天的小筆記，請找出：
+1. 筆記裡提到、而且是使用者在邀約、分享或服務的對象（潛在顧客、朋友、顧客）。協助使用者的夥伴（例如幫忙做服務、陪同的人）不要列成對象，只寫進該對象的 note。
+2. 筆記裡約好的行程（有日期的見面、服務、課程、電話）。
+名單上已經有這些人：${names}。如果筆記提到的人跟名單上的名字是同一個人（同名或明顯是暱稱），name 請用名單上的寫法，existing 填 true；否則 existing 填 false。
+只輸出一個 JSON 物件，不要任何其他文字或程式碼框，格式：
+{"people":[{"name":"","existing":true,"touch":{"type":"","result":"","product":""},"fields":{"sex":"","age":"","city":"","rel":"","family":"","job":"","fun":"","money":"","health":"","dream":"","status":"","contact":"","date":"","note":""}}],
+ "tasks":[{"date":"YYYY-MM-DD","text":""}]}
+touch 是這次跟這個人做了什麼接觸：type 只能是 ${pick('types')} 其中之一（例如分享了產品→分享產品、做了問卷或健康測驗→健康問卷、聊了事業機會→分享商機、帶去聽事業說明→聽 UBP、上了成功五要訣→上 B5）；result 只能是 ${pick('results')} 其中之一或空字串，筆記沒說就空字串；product 是分享的產品名稱。筆記沒有提到任何接觸時，type 填空字串。
+欄位規則：rel 只能是 ${pick('rel')}；family 只能是 ${pick('family')}；money 只能是 ${pick('money')}；health 只能是 ${pick('health')}；status 只能是 ${pick('status')}；date 是下一次約好見面的日期 YYYY-MM-DD；note 用一句話寫這次的重點（誰、做什麼、幾點、誰協助）。今天是 ${b.today || ''}，「下週三」「12/9」這類說法請換算成完整日期（沒寫年份就用離今天最近的未來日期）。
+tasks 只放之後約好的行程（日期在今天之後，或今天但還沒發生的），筆記裡已經做完的事不要放進 tasks。tasks 的 text 寫成一句可以直接當待辦事項的話，例如「10:30 佳穎水光肌（子筠協助）」，時間放最前面。
+city 只有筆記明確說是那個人住在哪裡才填，筆記作者自己人在哪裡不算。提到筆記作者時一律寫「我」，不要寫「使用者」。沒提到的欄位一律空字串，不要猜測。沒有對象或行程就給空陣列。全部用繁體中文。`;
+  try {
+    const raw = await minimax(env, system, text, 4000, 60000);
+    const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
+    if (!m) return json({ error: 'AI 回覆看不懂，請再試一次', raw: raw.slice(0, 300) });
+    const r = JSON.parse(m[0]);
+    return json({ people: Array.isArray(r.people) ? r.people : [], tasks: Array.isArray(r.tasks) ? r.tasks : [] });
+  } catch (e) { return json({ error: 'AI 分析失敗：' + e.message }); }
 }
 
 /* ---------- 定時提醒 ---------- */
@@ -350,6 +417,8 @@ export async function onRequest({ request, env, params, waitUntil }) {
       return json({ ok: true });
     }
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
+    if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
+    if (path === 'ai/note' && method === 'POST') return aiNote(request, env);
     if (path === 'ai/test' && method === 'POST') {       // 測試 MiniMax 連線，回傳成功或錯誤原因
       const info = { base: (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1'), model: env.MINIMAX_MODEL || 'MiniMax-M3', hasKey: !!env.MINIMAX_API_KEY };
       if (!info.hasKey) return json({ ok: false, error: '還沒設定 MINIMAX_API_KEY', ...info });
