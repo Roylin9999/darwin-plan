@@ -20,7 +20,10 @@
  *   SITE_URL                  選填，日誌網址，會附在提醒訊息最後
  */
 
-const PERSONA = '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。你用第一人稱說話，稱呼使用者為「主人」，絕對不要把使用者叫成達爾文。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教，不用條列。';
+// 達爾文的個性：所有 AI 回覆都照這段說話
+const PERSONA = '你是達爾文，一隻棕白虎斑貓，全世界最愛你的主人。你用第一人稱說話，稱呼使用者為「主人」，絕對不要把使用者叫成達爾文。用繁體中文，語氣充滿愛與鼓勵，溫暖、撒嬌、俏皮。先真心肯定主人已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。主人沒做完、心情不好或想放棄時，絕對不責備、不催促，只給理解和支持。兩到四句話，不說教，不用條列。';
+// 提醒訊息裡輪流出現的打氣話
+const CHEERS = ['你願意開始，就已經很了不起了。', '一步一步來，我一直都在。', '今天的你，也是我最驕傲的主人。', '慢慢來沒關係，有做就是前進。', '不管做了幾件，回家都有我抱抱。', '你比自己以為的還要厲害喔。', '我最喜歡看你認真的樣子了。'];
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
@@ -64,26 +67,31 @@ function buildMessage(S, kind, env) {
   const tail = (daysLeft !== null ? `\n距離 ${md(meta.deadline)} 還有 ${daysLeft} 天` : '') + (env.SITE_URL ? `\n\n打開日誌 ${env.SITE_URL}` : '');
   const list = a => a.map(t => '・' + t.t).join('\n');
 
+  const cheer = CHEERS[((dayNo || 0) + (kind === 'pm' ? 3 : 0)) % CHEERS.length];
   // am＝早上提醒；now＝在 LINE 輸入「今天」時的回覆（不分早晚）
   if (kind === 'am' || kind === 'now') {
-    const hello = kind === 'am' ? `🐾 ${name}早安！我是達爾文` : `🐾 ${name}，達爾文來報告`;
+    const hello = kind === 'am' ? `🐾 ${name}早安！我是最愛你的達爾文` : `🐾 ${name}，達爾文來報告囉`;
     const head = `${hello}\n今天是計劃第 ${dayNo} 天` + (w ? `（第 ${w.n} 週・${w.phase}）` : '');
-    const body = tasks.length ? `今天要做的事：\n${list(left.length ? left : tasks)}` : '今天還沒寫任務，打開日誌填一件最小的事吧。';
-    return `${head}\n\n${body}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}`;
+    const body = !tasks.length ? '今天還沒寫任務也沒關係，打開日誌填一件最小的事，我陪你開始。'
+      : !left.length ? `今天的 ${tasks.length} 件事全部完成了！我的主人太棒了。`
+      : (done.length ? `已經完成 ${done.length} 件了，好棒！還有這些可以慢慢來：` : '今天可以做的事：') + `\n${list(left)}`;
+    return `${head}\n\n${body}\n${w ? `\n本週里程碑：${w.target}` : ''}${tail}\n\n${cheer}`;
   }
   if (kind === 'pm') {
-    if (!tasks.length) return `🐾 ${name}晚安，我是達爾文\n今天還沒有紀錄，睡前寫下一件明天要做的事就好。${tail}`;
-    if (!left.length) return `🐾 ${name}晚安，我是達爾文\n今天 ${tasks.length} 件事全部完成！太棒了，記得回日誌打卡分享。${tail}`;
-    return `🐾 ${name}晚安，我是達爾文\n今天完成 ${done.length} / ${tasks.length}，還有：\n${list(left)}\n\n做完記得回日誌蓋貓掌。${tail}`;
+    const hello = `🐾 ${name}晚安，今天辛苦了`;
+    if (!tasks.length) return `${hello}\n今天沒有紀錄也沒關係，睡前寫下一件明天想做的事就好，我陪你。${tail}\n\n${cheer}`;
+    if (!left.length) return `${hello}\n今天 ${tasks.length} 件事全部完成！我的主人最棒了，快回日誌打卡，讓大家一起為你開心。${tail}\n\n好好休息，愛你喵。`;
+    const lead = done.length ? `今天完成了 ${done.length} / ${tasks.length}，每一件都算數，已經很棒了！\n剩下的不急，明天我們再一起：` : '今天比較忙對不對？沒關係的，你已經很努力了。\n這幾件事明天我陪你慢慢來：';
+    return `${hello}\n${lead}\n${list(left)}${tail}\n\n${cheer}\n好好休息，愛你喵。`;
   }
   if (kind === 'week' && w) {
     let all = 0, ok = 0;
     for (const k of Object.keys(S.days || {})) if (k >= w.s && k <= w.e) { const t = S.days[k].tasks || []; all += t.length; ok += t.filter(x => x.d).length; }
     const flags = (S.weeks && S.weeks[w.n]) || [], actsLeft = (w.acts || []).filter((_, i) => !flags[i]);
     const next = weeks.find(x => x.n === w.n + 1);
-    return `🐾 ${name}，第 ${w.n} 週回顧來了\n每日任務完成 ${ok} / ${all}\n` +
-      (actsLeft.length ? `本週重點還沒勾的：\n${actsLeft.map(a => '・' + a).join('\n')}` : '本週重點全部完成！') +
-      (next ? `\n\n下週（${next.phase}）里程碑：${next.target}` : '') + tail;
+    return `🐾 ${name}，這週辛苦了，達爾文陪你回顧\n這週完成了 ${ok} / ${all} 件每日任務，每一件都是你走出來的！\n` +
+      (actsLeft.length ? `下週可以再試試這幾件：\n${actsLeft.map(a => '・' + a).join('\n')}` : '本週重點全部完成，太厲害了！') +
+      (next ? `\n\n下週（${next.phase}）里程碑：${next.target}` : '') + tail + '\n\n不管進度到哪裡，我都以你為榮。';
   }
   return '';
 }
@@ -118,31 +126,74 @@ async function lineWebhook(request, env, waitUntil) {
   return json({ ok: true });
 }
 
+// 啦啦隊（群組裡主人的朋友）跟達爾文說話時用的個性
+const CHEER_PERSONA = '你是達爾文，一隻棕白虎斑貓，最愛你的主人。現在跟你說話的不是主人，而是主人的朋友，是幫主人加油的啦啦隊。用繁體中文、溫暖俏皮的口吻親切回應他，稱呼他「啦啦隊」或用他說話的語氣回應，並邀他一起為主人打氣。可以分享主人今天的進度，但不要責備主人沒做完的事。兩到三句話，不用條列。';
+
+/* 誰可以做什麼
+ *   一對一聊天：輸入「綁定 通關碼」成為主人。主人可以查任務、聊天、收每天的提醒。
+ *   群組：只有訊息裡提到「達爾文」，或是「今天／本週」這類指令時才回應，不會每句都插話。
+ *         主人在群組說「達爾文 啦啦隊」，這個群組就成為啦啦隊；
+ *         之後群組裡每個人都可以叫達爾文、看主人的進度，不需要密碼。
+ *   通關碼只能在一對一聊天輸入，在群組輸入會被拒絕（避免大家都看到）。
+ */
 async function handleLineEvents(events, env) {
   for (const ev of events) {
-    if (ev.type !== 'message' || !ev.message || ev.message.type !== 'text' || !ev.source || !ev.source.userId) continue;
-    const text = ev.message.text.trim(), uid = ev.source.userId, bound = await kvGet(env, 'line_user');
+    if (ev.type !== 'message' || !ev.message || ev.message.type !== 'text' || !ev.source) continue;
+    const text = ev.message.text.trim(), src = ev.source, uid = src.userId || '';
+    const groupId = src.groupId || src.roomId || '', inGroup = !!groupId;
+    const reply = t => lineReply(env, ev.replyToken, t);
     try {
+      const owner = await kvGet(env, 'line_user'), isOwner = !!uid && uid === owner;
+      const isCmd = /^(今天|任務|進度|本週|這週|回顧)/.test(text);
+
       if (text.startsWith('綁定')) {
-        if (env.ACCESS_CODE && text.replace('綁定', '').trim() === env.ACCESS_CODE) {
+        if (inGroup) { await reply('🐾 通關碼是主人的小祕密，請不要在群組裡輸入喔。\n請主人私訊我再輸入「綁定 通關碼」。如果剛剛已經貼出來了，記得換一組新的。'); continue; }
+        if (env.ACCESS_CODE && uid && text.replace('綁定', '').trim() === env.ACCESS_CODE) {
           await kvSet(env, 'line_user', uid);
-          await lineReply(env, ev.replyToken, '🐾 綁定成功！之後我會在這裡提醒你每天的任務。\n輸入「今天」可以隨時看今天要做的事。');
-        } else await lineReply(env, ev.replyToken, '通關碼不對喔。請輸入：綁定 加上你的通關碼。');
+          await reply('🐾 綁定成功！主人，從今天起我每天陪你。\n輸入「今天」可以看今天要做的事，想聊天也可以直接跟我說喔。');
+        } else await reply('通關碼不對喔。請輸入：綁定 加上你的通關碼。');
         continue;
       }
-      if (uid !== bound) { await lineReply(env, ev.replyToken, '請先輸入：綁定 加上你的通關碼，我才知道你是誰。'); continue; }
+
+      if (inGroup) {
+        if (!text.includes('達爾文') && !isCmd) continue;            // 群組裡沒叫我就不插話
+        const cheerGroup = await kvGet(env, 'cheer_group');
+        if (isOwner && text.includes('啦啦隊')) {
+          await kvSet(env, 'cheer_group', groupId);
+          await reply('🐾 收到！這個群組從現在起就是主人的啦啦隊。\n大家只要叫我「達爾文」就可以跟我聊天，輸入「今天」可以看主人今天的進度，一起幫主人加油喵！');
+          continue;
+        }
+        if (groupId !== cheerGroup) {
+          if (isOwner) await reply('🐾 主人，想讓這個群組當你的啦啦隊嗎？在這裡說「達爾文 啦啦隊」就可以了。');
+          continue;                                                   // 不是啦啦隊群組，其他人不回應
+        }
+      } else if (!isOwner) { await reply('請先輸入：綁定 加上你的通關碼，我才知道你是誰。'); continue; }
+
       const st = await loadState(env), S = st && st.data;
-      if (!S) { await lineReply(env, ev.replyToken, '還沒有紀錄，先打開日誌看看吧。' + (env.SITE_URL ? '\n' + env.SITE_URL : '')); continue; }
-      if (/^(今天|任務|進度)/.test(text)) { await lineReply(env, ev.replyToken, buildMessage(S, 'now', env)); continue; }
-      if (/^(本週|這週|回顧)/.test(text)) { await lineReply(env, ev.replyToken, buildMessage(S, 'week', env) || '這週沒有計劃內容。'); continue; }
-      let reply = '';
+      if (!S) { await reply('我這邊還沒有紀錄，請主人先打開日誌看看，我在裡面等。' + (env.SITE_URL && !inGroup ? '\n' + env.SITE_URL : '')); continue; }
+      const forCheer = inGroup && !isOwner, envOut = inGroup ? { ...env, SITE_URL: '' } : env;   // 群組裡不貼日誌網址
+      if (/^(今天|任務|進度)/.test(text)) { await reply((forCheer ? '🐾 啦啦隊請看，這是主人今天的進度：\n\n' : '') + buildMessage(S, 'now', envOut)); continue; }
+      if (/^(本週|這週|回顧)/.test(text)) { await reply(buildMessage(S, 'week', envOut) || '這週沒有計劃內容。'); continue; }
+      let out = '';
       if (env.MINIMAX_API_KEY) {
-        try { reply = await minimax(env, PERSONA, `主人在 LINE 說：「${text}」\n今天的任務狀況：\n${buildMessage(S, 'pm', env)}`); }
-        catch (e) { console.log('minimax error', e.message); reply = ''; }
+        const who = forCheer ? '主人的朋友（啦啦隊）' : '主人';
+        try { out = await minimax(env, forCheer ? CHEER_PERSONA : PERSONA, `${who}在 LINE 說：「${text}」\n主人今天的任務狀況：\n${buildMessage(S, 'pm', envOut)}`); }
+        catch (e) { console.log('minimax error', e.message); out = ''; }
       }
-      await lineReply(env, ev.replyToken, reply || '🐾 我在！輸入「今天」看今天的任務，輸入「本週」看這週回顧。');
+      await reply(out || (forCheer ? '🐾 啦啦隊好！輸入「今天」可以看主人今天的進度，一起幫主人加油喵。'
+        : '🐾 主人我在！不管今天過得怎麼樣，你都很棒。\n輸入「今天」看今天的任務，輸入「本週」看這週回顧。'));
     } catch (e) { console.log('line event error', e.message); }
   }
+}
+
+// 主人把今天的任務全部做完時，向啦啦隊群組報喜（一天一次）
+async function cheerIfAllDone(env, S) {
+  const group = await kvGet(env, 'cheer_group'); if (!group || !S) return;
+  const now = taipeiNow(), tasks = (S.days && S.days[now.key] && S.days[now.key].tasks) || [];
+  if (!tasks.length || tasks.some(t => !t.d)) return;
+  const mark = `sent:${now.key}:cheer`; if (await kvGet(env, mark)) return;
+  await kvSet(env, mark, '1');
+  await linePush(env, group, [`🐾 報告啦啦隊！主人今天的 ${tasks.length} 件事全部完成了！\n${tasks.map(t => '・' + t.t).join('\n')}\n\n快來誇誇主人，我先去開罐罐慶祝喵。`]);
 }
 
 /* ---------- MiniMax（OpenAI 相容的 chat/completions） ---------- */
@@ -211,6 +262,8 @@ export async function onRequest({ request, env, params, waitUntil }) {
       const b = JSON.parse(raw);
       if (!b || typeof b.data !== 'object') return json({ error: 'bad body' }, 400);
       await kvSet(env, 'state', JSON.stringify({ data: b.data, updated: +b.updated || Date.now() }));
+      const cheer = cheerIfAllDone(env, b.data).catch(e => console.log('cheer error', e.message));
+      if (waitUntil) waitUntil(cheer); else await cheer;
       return json({ ok: true });
     }
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
@@ -218,7 +271,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
       const info = { base: (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1'), model: env.MINIMAX_MODEL || 'MiniMax-M3', hasKey: !!env.MINIMAX_API_KEY };
       if (!info.hasKey) return json({ ok: false, error: '還沒設定 MINIMAX_API_KEY', ...info });
       const t0 = Date.now();
-      try { const reply = await minimax(env, PERSONA, '主人剛完成今天的第一件任務，請說一句話鼓勵他。'); return json({ ok: !!reply, reply, error: reply ? undefined : '有連上，但回覆是空的', ms: Date.now() - t0, ...info }); }
+      try { const reply = await minimax(env, PERSONA, '主人剛完成今天的第一件任務，請鼓勵他。'); return json({ ok: !!reply, reply, error: reply ? undefined : '有連上，但回覆是空的', ms: Date.now() - t0, ...info }); }
       catch (e) { return json({ ok: false, error: e.message, ms: Date.now() - t0, ...info }); }
     }
     if (path === 'line/test' && method === 'POST') {

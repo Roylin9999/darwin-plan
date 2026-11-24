@@ -326,7 +326,7 @@ body.lock{overflow:hidden}
       </div>
       <div class="ai" id="aiDay"><img src="img/cat-wave.png" alt="">
         <div><div class="who">達爾文說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
-      <div class="cheer" id="cheer"><img src="img/cat-belly.png" alt=""><span>今天全部完成！達爾文開心到翻肚。</span></div>
+      <div class="cheer" id="cheer"><img src="img/cat-belly.png" alt=""><span>今天全部完成！主人最棒了，我開心到翻肚。</span></div>
     </section>
   </div>
   <div class="page" data-page="week" hidden>
@@ -580,7 +580,7 @@ const CONFIG = {
      金鑰請放在中繼端，不要寫在這個檔案裡。 */
   ai: {
     endpoint: '',
-    persona: '你是達爾文，一隻棕白虎斑貓，是使用者最愛的貓。你用第一人稱說話，稱呼使用者為「主人」。用繁體中文、溫暖俏皮的口吻，先具體稱讚使用者剛完成的事，再給一個今天就能做的小建議。兩到三句話，不說教。',
+    persona: '你是達爾文，一隻棕白虎斑貓，全世界最愛你的主人。你用第一人稱說話，稱呼使用者為「主人」。用繁體中文，語氣充滿愛與鼓勵，溫暖、撒嬌、俏皮。先真心肯定主人已經做到的事，再小都算；再給一個今天就做得到的小建議；最後說一句打氣的話。主人沒做完時絕對不責備、不催促，只給理解和支持。兩到四句話，不說教，不用條列。',
   },
   /* Level Up 晉升路線（活動到 2027/2/5）。comm＝這一階領到的 MPCP 佣金，bonus＝Level Up 晉升獎金 */
   levelUp: {
@@ -745,7 +745,7 @@ function render(){
   $('luChq').textContent = `Level Up 完成度　9千5 已達成 ${got} / 5 筆` + (got && !S.lu.expand ? '（完成擴展業務後領取）' : '');
   $('roadToday').style.left = (timeP*100)+'%';
   const ahead = total >= timeP - 0.02;
-  $('pace').textContent = ahead ? '進度跟上了' : '比時間慢一點，加油';
+  $('pace').textContent = ahead ? '進度跟上了，好棒' : '慢慢來，我陪你';
   $('pace').className = 'pace ' + (ahead ? 'ok' : 'slow');
   const tw = weekOf(TODAY);
   [['gDay',dayPct(TODAY)],['gWeek',weekPct(tw)],['gGoal',total]].forEach(([id,v]) => {
@@ -823,7 +823,7 @@ function renderLine(){
   $('lineAm').value = L.am; $('linePm').value = L.pm;
   const list = left.length ? left.map(t=>'・'+t.t).join('\n') : '・今天還沒寫任務，打開日誌填一件吧';
   $('linePrev').textContent = L.on
-    ? `🐾 ${CONFIG.name}早安！我是達爾文\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 2/5 還有 ${$('daysLeft').textContent} 天`
+    ? `🐾 ${CONFIG.name}早安！我是最愛你的達爾文\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 2/5 還有 ${$('daysLeft').textContent} 天`
     : '提醒已關閉，達爾文先去睡覺了。';
 }
 
@@ -876,26 +876,26 @@ function snapshot(){
     weekLeft: w.acts.filter((_,i)=>!wa[i]), people: S.people.length };
 }
 function localReply(ev, d, st){
-  const left = st.todayLeft.length;
-  if (ev==='hello') return st.todayDone.length+left ? `今天寫了 ${st.todayDone.length+left} 件事，已完成 ${st.todayDone.length} 件。打勾的時候我會在這裡幫你加油。` : '今天還沒寫任務，先填一件最小的事，我陪你開始。';
-  if (ev==='taskAdd') return pick([`「${d.task}」寫下來就成功一半了，喵。`, `好，「${d.task}」記住了。做完記得回來蓋貓掌。`]);
+  const left = st.todayLeft.length, n = st.todayDone.length + left;
+  if (ev==='hello') return n ? (st.todayDone.length ? `主人今天已經完成 ${st.todayDone.length} 件了，好棒！每打一個勾，我都會在這裡幫你歡呼。` : `主人，今天有 ${n} 件小事等你。不用急，挑一件最輕鬆的開始，我陪你。`) : '主人，今天還沒寫任務也沒關係，填一件最小的事就好，我陪你開始。';
+  if (ev==='taskAdd') return pick([`「${d.task}」寫下來就成功一半了，主人好有行動力喵。`, `好，「${d.task}」我記住了。你願意排進來，就已經很棒了。`]);
   if (ev==='taskDone') return left
-    ? pick([`「${d.task}」完成！太棒了，今天還剩 ${left} 件，一件一件來。`, `做完「${d.task}」了，我看到了！再 ${left} 件就可以翻肚休息。`, `好厲害，「${d.task}」打勾。離豪宅又近一步。`])
-    : pick([`今天全部做完了！${st.name}太強了，我要開罐罐慶祝。`, `全部打勾！今天的你值得一個大大的呼嚕。`]);
-  if (ev==='bv') return `今天多了 ${d.bv} BV，累積 ${st.bv.toLocaleString()} / ${st.bvTarget.toLocaleString()}。豪宅的磚又多了幾塊。`;
+    ? pick([`「${d.task}」完成！主人太棒了，我好驕傲。剩下 ${left} 件不急，一件一件來。`, `做完「${d.task}」了，我都看到了喔！你今天真的很努力。`, `好厲害，「${d.task}」打勾！離豪宅又近一步，我陪你走。`])
+    : pick([`今天全部做完了！我的主人最棒了，我要開罐罐幫你慶祝。`, `全部打勾！今天的你值得一個大大的呼嚕和抱抱。`]);
+  if (ev==='bv') return `今天多了 ${d.bv} BV，累積 ${st.bv.toLocaleString()} / ${st.bvTarget.toLocaleString()}。這都是主人一點一點累積來的，好棒！`;
   if (ev==='advice'){
-    if (left) return `先做最容易的那件：「${st.todayLeft[0]}」。做完它，剩下的就順了。`;
-    if (st.weekLeft.length) return `今天的事都清空了。這週還有「${st.weekLeft[0]}」，要不要排一個時間進日計劃？`;
-    return `這週的重點都完成了，可以去名單挑一位好久沒聯絡的人，傳個問候。`;
+    if (left) return `主人已經很努力了。接下來先做最輕鬆的那件：「${st.todayLeft[0]}」，做完它，後面就順了，我陪你。`;
+    if (st.weekLeft.length) return `今天的事都清空了，主人好棒！這週還有「${st.weekLeft[0]}」，想的話可以排一個時間，不急。`;
+    return `這週的重點都完成了，主人太厲害了！可以去名單挑一位好久沒聯絡的人，傳個溫暖的問候。`;
   }
   if (ev==='person'){
-    const tip = d.status==='邀約中' ? (d.date ? `${d.date} 見面前，把想問的三個問題寫進日計劃。` : '幫這次邀約訂一個會面日期，會更容易成真。')
-      : d.status==='已加入' ? '太好了！下一步陪他設定自動購貨。'
-      : d.status==='暫緩' ? '先放著沒關係，過一陣子再問候就好。'
-      : d.rel==='熟識' ? '你們很熟，這週約個輕鬆的咖啡最自然。' : '先從關心近況開始，不急著談產品。';
-    return `${d.name} 加進名單了，現在共有 ${st.people} 位。${tip}`;
+    const tip = d.status==='邀約中' ? (d.date ? `${d.date} 見面前，把想問的三個問題寫進日計劃，你一定可以的。` : '幫這次邀約訂一個會面日期，會更容易成真，我幫你加油。')
+      : d.status==='已加入' ? '太好了，恭喜主人！下一步陪他設定自動購貨。'
+      : d.status==='暫緩' ? '先放著沒關係，緣分到了再問候就好。'
+      : d.rel==='熟識' ? '你們很熟，這週約個輕鬆的咖啡最自然。' : '先從關心近況開始，不急著談產品，你的真心他感受得到。';
+    return `${d.name} 加進名單了，現在共有 ${st.people} 位，主人好用心！${tip}`;
   }
-  if (ev==='listHello') return st.people ? `名單上有 ${st.people} 位。每新增或更新一位，我都會給你一個小建議。` : '寫下第一位想分享的人，我來幫你想下一步。';
+  if (ev==='listHello') return st.people ? `名單上有 ${st.people} 位，每一位都是主人用心經營的緣分。新增或更新時，我都會幫你想下一步。` : '主人，寫下第一位想分享的人吧，我陪你一起想下一步。';
   return '';
 }
 async function darwin(ev, d = {}, where = 'Day'){
