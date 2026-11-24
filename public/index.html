@@ -70,9 +70,24 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
 .g.cur{background:var(--orange-soft)}
 @media (max-width:520px){.g{flex-direction:column;gap:4px;text-align:center;padding:8px 4px}.g span small{display:none}}
 
+
+/* 商機：基本功影片 */
+.biz-player{border:3px solid var(--ink);border-radius:18px;overflow:hidden;background:#000;aspect-ratio:16/9}
+.biz-player video{width:100%;height:100%;display:block;background:#000}
+.biz-now{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+.biz-now b{font-size:18px}
+.biz-speed{display:flex;gap:6px}
+.biz-speed button,.biz-full{border:2.5px solid var(--ink);border-radius:999px;background:#fff;font-weight:700;font-size:13px;padding:4px 12px}
+.biz-speed button[aria-pressed=true]{background:var(--orange-soft)}
+.biz-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.biz-item{border:2.5px solid var(--ink);border-radius:16px;background:#fff;padding:0;overflow:hidden;text-align:left;font:inherit;color:var(--ink)}
+.biz-item img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-bottom:2.5px solid var(--ink)}
+.biz-item span{display:block;padding:8px 10px 10px;font-weight:700;font-size:14px;line-height:1.35}
+.biz-item small{display:block;font-weight:400;font-size:12px;color:var(--ink-soft)}
+.biz-item[aria-current=true]{background:var(--orange-soft)}
 /* 下方分頁選單 */
 .tabs{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100% - 24px));z-index:20;
-  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px;background:var(--paper);
+  display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:6px;background:var(--paper);
   border:3px solid var(--ink);border-radius:26px;box-shadow:0 6px 0 var(--ink)}
 .tab{border:2.5px solid transparent;background:transparent;border-radius:18px;padding:4px 0 3px;font-size:12px;font-weight:700;color:var(--ink-soft);
   display:grid;justify-items:center;gap:0;min-width:0}
@@ -465,6 +480,19 @@ body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
       <div class="conds" id="conds"></div>
     </section>
   </div>
+  <div class="page" data-page="biz" hidden>
+    <section class="card" aria-label="商機影片">
+      <div class="sec-head"><h2>商機</h2><span class="eyebrow">Ygrek 的六支基本功影片</span></div>
+      <div class="biz-player"><video id="bizVid" controls playsinline preload="metadata" x-webkit-airplay="deny" disableremoteplayback></video></div>
+      <div class="biz-now"><b id="bizTitle"></b>
+        <span class="biz-speed" role="group" aria-label="播放速度"><button data-sp="0.9">0.9×</button><button data-sp="1" aria-pressed="true">1×</button><button data-sp="1.1">1.1×</button><button class="biz-full" id="bizFull">⛶ 全螢幕</button></span>
+      </div>
+    </section>
+    <section class="card" aria-label="影片清單">
+      <div class="sec-head"><h2>依序看</h2><span class="eyebrow">點一下就播放</span></div>
+      <div class="biz-list" id="bizList"></div>
+    </section>
+  </div>
   <div class="page" data-page="line" hidden>
     <section class="card line" aria-label="LINE 提醒">
       <div class="sec-head"><h2>LINE 提醒</h2><span class="tag" id="lineTag">尚未連線</span></div>
@@ -499,6 +527,7 @@ body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
   <button class="tab" data-go="list"><img src="img/nav-list.png" alt="">名單</button>
   <button class="tab" data-go="goal"><img src="img/nav-goal.png" alt="">總目標</button>
   <button class="tab" data-go="line"><img src="img/nav-line.png" alt="">提醒</button>
+  <button class="tab" data-go="biz"><img src="img/sit.png" alt="">商機</button>
 </nav>
 
 <div class="sheet-bg" id="sheet" hidden>
@@ -1488,12 +1517,46 @@ $('pDel').addEventListener('click', e => { if (VIEW) return; const b = e.current
   if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次刪除'; return; }
   delete b.dataset.sure; S.people.splice(pEdit,1); save(); closeSheet(); renderPeople(); });
 
-const TABS = ['day','week','list','goal','line'];
+
+/* ===== 商機：基本功影片（檔案放在 public/v/）===== */
+const BIZ_VIDEOS = [   // ← 要調整順序或標題，改這裡
+  {id:'tour',     title:'網站導覽',           sub:'美安台灣購物網逛一遍'},
+  {id:'wuying',   title:'五贏平台',           sub:'五種角色都得到好處'},
+  {id:'mpcp',     title:'MPCP 制度',          sub:'管理業績紅利計畫'},
+  {id:'isotonix', title:'等滲透的優勢',       sub:'愛尚它 Isotonix'},
+  {id:'excel',    title:'獨家代理產品的卓越性', sub:'為什麼選美安'},
+  {id:'onestore', title:'一家店計畫',         sub:'一步一步建立事業'},
+];
+let bizCur = null, bizSpeed = 1;
+function bizPlay(i, auto){
+  const v = $('bizVid'), x = BIZ_VIDEOS[i]; bizCur = i;
+  v.src = 'v/' + x.id + '.mp4'; v.poster = 'v/' + x.id + '.jpg'; v.playbackRate = bizSpeed;
+  $('bizTitle').textContent = (i+1) + '. ' + x.title;
+  document.querySelectorAll('.biz-item').forEach((b,j) => b.setAttribute('aria-current', j===i));
+  if (auto) v.play().catch(()=>{});
+}
+function bizInit(){
+  if (bizCur !== null) return;
+  $('bizList').innerHTML = BIZ_VIDEOS.map((x,i) => `<button class="biz-item" data-i="${i}"><img src="v/${x.id}.jpg" alt="" loading="lazy"><span>${i+1}. ${x.title}<small>${x.sub}</small></span></button>`).join('');
+  $('bizList').addEventListener('click', e => { const b = e.target.closest('.biz-item'); if (!b) return; bizPlay(+b.dataset.i, true); $('bizVid').scrollIntoView({behavior:'smooth', block:'center'}); });
+  document.querySelectorAll('[data-sp]').forEach(b => b.addEventListener('click', () => {
+    bizSpeed = +b.dataset.sp; $('bizVid').playbackRate = bizSpeed;
+    document.querySelectorAll('[data-sp]').forEach(o => o.setAttribute('aria-pressed', o===b)); }));
+  $('bizVid').addEventListener('loadedmetadata', e => e.target.playbackRate = bizSpeed);
+  $('bizVid').addEventListener('ended', () => { if (bizCur < BIZ_VIDEOS.length-1) bizPlay(bizCur+1, false); });
+  $('bizFull').addEventListener('click', () => { const v = $('bizVid');
+    if (v.requestFullscreen) v.requestFullscreen().catch(()=>{}); else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen(); });
+  bizPlay(0, false);
+}
+
+const TABS = ['day','week','list','goal','line','biz'];
 function setTab(t){
   if (!TABS.includes(t)) t = 'day';
   document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== t);
   document.querySelectorAll('.tab').forEach(b => b.dataset.go===t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
   document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
+  if (t!=='biz'){ const v = document.getElementById('bizVid'); if (v && !v.paused) v.pause(); }
+  if (t==='biz') bizInit();
   if (t==='day'){ fitTasks(); if (VIEW) document.querySelectorAll('#tasks textarea').forEach(x => x.readOnly = true); }
   if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
 }
