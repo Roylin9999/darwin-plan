@@ -416,6 +416,7 @@ body.lock{overflow:hidden}
     </section>
     <button class="sharebtn" id="lineTest" hidden>傳一則測試訊息到 LINE</button>
     <button class="sharebtn" id="aiTest" hidden style="background:var(--pink)">測試 AI 連線</button>
+    <p class="share-hint" id="lineQuota" style="text-align:left"></p>
     <p class="share-hint" id="lineMsg" style="text-align:left"></p>
     <div class="foot">
       <span id="footNote">紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。</span>
@@ -681,6 +682,13 @@ function cloudUI(msg){
   document.getElementById('aiTest').hidden = !CLOUD;
   document.getElementById('footNote').textContent = msg || (CLOUD ? '紀錄已同步到雲端，換裝置也看得到。' : '紀錄暫存在這台裝置的瀏覽器，部署到雲端後會自動同步。');
 }
+async function showQuota(){
+  try { const j = await (await api('line/quota')).json(); if (!j.ok) return;
+    $('lineQuota').textContent = j.limit == null ? `本月已推播 ${j.used} 則（不限量方案）`
+      : j.left > 0 ? `本月推播額度：已用 ${j.used} / ${j.limit} 則。用完後，提醒會改成在主人下次跟達爾文說話時一起送到。`
+      : `本月推播額度已用完（${j.used} / ${j.limit}）。提醒會先存起來，主人下次跟達爾文說話時一起送到。`;
+  } catch(e){}
+}
 async function cloudPull(){
   const r = await api('state');
   if (r.status === 401){ document.getElementById('codeBg').hidden = false; if (codeGet()) document.getElementById('codeErr').textContent = '通關碼不對，請再試一次。'; return false; }
@@ -690,7 +698,7 @@ async function cloudPull(){
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
     warmDays(); render(); darwin('hello'); darwin('listHello', {}, 'List');
   } else if (S.updated) cloudPush();
-  document.getElementById('codeBg').hidden = true; cloudUI(); return true;
+  document.getElementById('codeBg').hidden = true; cloudUI(); showQuota(); return true;
 }
 async function cloudInit(){
   try {

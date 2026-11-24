@@ -5,6 +5,7 @@
  *   PUT  /api/state          儲存紀錄（需通關碼）
  *   POST /api/ai             達爾文 AI 回應，轉呼叫 MiniMax（需通關碼）
  *   POST /api/line/test      立刻推一則提醒到 LINE（需通關碼）
+ *   GET  /api/line/quota     本月推播額度（需通關碼）
  *   POST /api/line/webhook   LINE 官方帳號的 Webhook
  *   GET  /api/cron?key=...   定時提醒，由 cron-worker 每 30 分鐘呼叫
  *
@@ -105,8 +106,68 @@ async function lineCall(env, path, body) {
   });
   if (!r.ok) throw new Error(`LINE ${path} ${r.status}: ${await r.text()}`);
 }
-const linePush = (env, to, texts) => lineCall(env, 'push', { to, messages: texts.filter(Boolean).slice(0, 5).map(text => ({ type: 'text', text })) });
+// texts 裡可以放純文字，也可以放已經組好的訊息物件（例如有標記主人的訊息）
+const linePush = (env, to, texts) => lineCall(env, 'push', { to, messages: texts.filter(Boolean).slice(0, 5).map(m => typeof m === 'string' ? { type: 'text', text: m } : m) });
+// 在群組裡標記（@）某個人：用 LINE 的 textV2 訊息，{owner} 會變成對那個人的標記
+const withMention = (userId, text) => !text ? null : ({
+  type: 'textV2', text: '{owner}\n' + text.replace(/[{}]/g, c => c + c),
+  substitution: { owner: { type: 'mention', mentionee: { type: 'user', userId } } },
+});
 const lineReply = (env, replyToken, text) => lineCall(env, 'reply', { replyToken, messages: [{ type: 'text', text }] });
+
+/* ---------- 推播額度：夠就準時推播，用完就改成「搭便車」 ----------
+ * 主動推播（push）會用掉官方帳號每月的免費額度，群組推播按群組人數計算。
+ * 回覆（reply）不算額度。所以額度不夠時，提醒先存起來，
+ * 等主人（或啦啦隊群組）下次跟達爾文說話時，跟著回覆一起送出。
+ */
+async function lineGet(env, path) {
+  const r = await fetch('https://api.line.me' + path, { headers: { authorization: 'Bearer ' + env.LINE_CHANNEL_ACCESS_TOKEN } });
+  if (!r.ok) throw new Error(`LINE ${path} ${r.status}`);
+  return r.json();
+}
+// 本月還剩幾則；查不到時回傳 null（照常嘗試推播）
+async function quotaInfo(env) {
+  try {
+    const [q, c] = await Promise.all([lineGet(env, '/v2/bot/message/quota'), lineGet(env, '/v2/bot/message/quota/consumption')]);
+    if (q.type !== 'limited') return { limit: null, used: c.totalUsage, left: Infinity };
+    return { limit: q.value, used: c.totalUsage, left: q.value - c.totalUsage };
+  } catch (e) { console.log('quota error', e.message); return null; }
+}
+// 推給這個對象會用掉幾則：私訊 1 則，群組按人數
+async function audience(env, to) {
+  const kind = to[0] === 'C' ? 'group' : to[0] === 'R' ? 'room' : '';
+  if (!kind) return 1;
+  try { return (await lineGet(env, `/v2/bot/${kind}/${to}/members/count`)).count || 1; } catch (e) { return 5; }
+}
+// 存起來等搭便車：同一種提醒只留最新一則；晚上的提醒到了，早上那則就不再補
+async function queuePending(env, to, tag, msgs) {
+  const k = 'pending:' + to, today = taipeiNow().key;
+  let list = []; try { list = JSON.parse((await kvGet(env, k)) || '[]'); } catch (e) {}
+  list = list.filter(x => x.day === today && x.tag !== tag && !(tag === 'pm' && x.tag === 'am'));
+  list.push({ tag, day: today, msgs: msgs.filter(Boolean).map(m => typeof m === 'string' ? { type: 'text', text: m } : m) });
+  await kvSet(env, k, JSON.stringify(list));
+}
+async function takePending(env, to) {
+  const k = 'pending:' + to, raw = await kvGet(env, k);
+  if (!raw) return [];
+  await kvSet(env, k, '[]');
+  let list = []; try { list = JSON.parse(raw); } catch (e) {}
+  const today = taipeiNow().key;
+  return list.filter(x => x.day === today).flatMap(x => x.msgs);
+}
+// 額度夠就推播；不夠（或 LINE 說本月用完）就存起來。回傳 'push' 或 'queued'
+async function smartPush(env, to, msgs, tag, quota) {
+  msgs = msgs.filter(Boolean);
+  if (!msgs.length) return 'none';
+  const q = quota === undefined ? await quotaInfo(env) : quota;
+  const cost = msgs.length * (await audience(env, to));
+  if (q && q.left < cost) { await queuePending(env, to, tag, msgs); return 'queued'; }
+  try { await linePush(env, to, msgs); if (q) q.left -= cost; return 'push'; }
+  catch (e) {
+    if (/ 429:/.test(e.message)) { await queuePending(env, to, tag, msgs); if (q) q.left = 0; return 'queued'; }
+    throw e;
+  }
+}
 
 async function verifyLine(env, raw, signature) {
   if (!env.LINE_CHANNEL_SECRET || !signature) return false;
@@ -141,7 +202,14 @@ async function handleLineEvents(events, env) {
     if (ev.type !== 'message' || !ev.message || ev.message.type !== 'text' || !ev.source) continue;
     const text = ev.message.text.trim(), src = ev.source, uid = src.userId || '';
     const groupId = src.groupId || src.roomId || '', inGroup = !!groupId;
-    const reply = t => lineReply(env, ev.replyToken, t);
+    // 回覆主人或啦啦隊群組時，順便把存起來的提醒一起送出（回覆不算額度）
+    let rideTarget = '';
+    const reply = async t => {
+      const extra = rideTarget ? await takePending(env, rideTarget) : [];
+      if (!extra.length) return lineReply(env, ev.replyToken, t);
+      const msgs = [{ type: 'text', text: t }, { type: 'text', text: '🐾 對了，這是稍早沒送到的提醒：' }, ...extra].slice(0, 5);
+      return lineCall(env, 'reply', { replyToken: ev.replyToken, messages: msgs });
+    };
     try {
       const owner = await kvGet(env, 'line_user'), isOwner = !!uid && uid === owner;
       const isCmd = /^(今天|任務|進度|本週|這週|回顧)/.test(text);
@@ -168,6 +236,7 @@ async function handleLineEvents(events, env) {
           continue;                                                   // 不是啦啦隊群組，其他人不回應
         }
       } else if (!isOwner) { await reply('請先輸入：綁定 加上你的通關碼，我才知道你是誰。'); continue; }
+      rideTarget = inGroup ? groupId : uid;          // 走到這裡的一定是主人私訊，或啦啦隊群組
 
       const st = await loadState(env), S = st && st.data;
       if (!S) { await reply('我這邊還沒有紀錄，請主人先打開日誌看看，我在裡面等。' + (env.SITE_URL && !inGroup ? '\n' + env.SITE_URL : '')); continue; }
@@ -193,7 +262,9 @@ async function cheerIfAllDone(env, S) {
   if (!tasks.length || tasks.some(t => !t.d)) return;
   const mark = `sent:${now.key}:cheer`; if (await kvGet(env, mark)) return;
   await kvSet(env, mark, '1');
-  await linePush(env, group, [`🐾 報告啦啦隊！主人今天的 ${tasks.length} 件事全部完成了！\n${tasks.map(t => '・' + t.t).join('\n')}\n\n快來誇誇主人，我先去開罐罐慶祝喵。`]);
+  const text = `🐾 報告啦啦隊！主人今天的 ${tasks.length} 件事全部完成了！\n${tasks.map(t => '・' + t.t).join('\n')}\n\n快來誇誇主人，我先去開罐罐慶祝喵。`;
+  const owner = await kvGet(env, 'line_user');
+  await smartPush(env, group, [owner ? withMention(owner, text) : text], 'cheer');
 }
 
 /* ---------- MiniMax（OpenAI 相容的 chat/completions） ---------- */
@@ -234,12 +305,16 @@ export async function runCron(env) {
   if (!kind) return { sent: 0, reason: 'not time', slot: now.slot };
   const mark = `sent:${now.key}:${kind}`;
   if (await kvGet(env, mark)) return { sent: 0, reason: 'already sent' };
-  const texts = [buildMessage(S, kind, env)];
-  if (kind === 'pm' && now.weekday === 0 && L.wk) texts.push(buildMessage(S, 'week', env));
-  await linePush(env, to, texts);
+  // 發到哪裡：private＝私訊主人；group＝啦啦隊群組並標記主人；both＝兩邊都發。沒有啦啦隊群組時一律私訊
+  const group = await kvGet(env, 'cheer_group'), where = group ? (L.where || 'private') : 'private';
+  const build = e => { const t = [buildMessage(S, kind, e)]; if (kind === 'pm' && now.weekday === 0 && L.wk) t.push(buildMessage(S, 'week', e)); return t; };
+  const texts = build(env);
   await kvSet(env, mark, '1');
+  const quota = await quotaInfo(env), result = {};
+  if (where !== 'group') result.private = await smartPush(env, to, texts, kind, quota);
+  if (where !== 'private') result.group = await smartPush(env, group, build({ ...env, SITE_URL: '' }).map(t => withMention(to, t)), kind, quota);
   await env.DB.prepare("DELETE FROM kv WHERE k LIKE 'sent:%' AND updated < ?").bind(Date.now() - 3 * 864e5).run();
-  return { sent: texts.filter(Boolean).length, kind };
+  return { sent: texts.filter(Boolean).length, kind, where, result, quotaLeft: quota ? quota.left : null };
 }
 
 /* ---------- 路由 ---------- */
@@ -278,8 +353,14 @@ export async function onRequest({ request, env, params, waitUntil }) {
       const st = await loadState(env), to = await kvGet(env, 'line_user');
       if (!to) return json({ ok: false, error: '還沒綁定 LINE：請在官方帳號輸入「綁定 通關碼」。' });
       if (!st || !st.data) return json({ ok: false, error: '雲端還沒有紀錄，先在日誌勾一件事再試。' });
-      await linePush(env, to, [buildMessage(st.data, 'now', env)]);
+      const how = await smartPush(env, to, [buildMessage(st.data, 'now', env)], 'test');
+      if (how === 'queued') return json({ ok: false, error: '本月推播額度用完了，這則已存起來，主人下次跟達爾文說話時會一起送到。' });
       return json({ ok: true });
+    }
+    if (path === 'line/quota' && method === 'GET') {
+      const q = await quotaInfo(env);
+      if (!q) return json({ ok: false });
+      return json({ ok: true, limit: q.limit, used: q.used, left: q.left === Infinity ? null : q.left });
     }
     return json({ error: 'not found' }, 404);
   } catch (e) {
