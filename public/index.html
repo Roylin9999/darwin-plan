@@ -116,6 +116,15 @@ body.lock{overflow:hidden}
 .cond .sharebtn{grid-column:1/-1;justify-self:start;margin-top:4px}
 #shareImg{width:min(100%,360px);margin:0 auto;border:3px solid var(--ink);border-radius:16px;background:#fff;aspect-ratio:4/5}
 .share-hint{margin:0;font-size:13px;color:var(--ink-soft);text-align:center}
+.viewbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--green-soft);padding:10px 14px;font-weight:700;font-size:14px}
+.viewbar button{border:2.5px solid var(--ink);border-radius:999px;background:#fff;font-weight:700;font-size:13px;padding:4px 12px}
+.sheet-act .ghost{flex:1;background:#fff}
+/* 檢視模式：只能看，不能改 */
+body.view .tab[data-go=list], body.view .tab[data-go=line], body.view #reset, body.view .task.blank, body.view .del, body.view #aiAsk{display:none!important}
+body.view .tabs{grid-template-columns:repeat(3,1fr)}
+body.view .field:has(#dayNote){display:none}
+body.view #tasks .tt, body.view #tasks .box, body.view #weekActions .box, body.view .paw, body.view #dayBv, body.view #dayNote, body.view #luLeft{pointer-events:none}
+body.view #tasks .tt{border-bottom-color:transparent}
 .sheet-top{display:flex;justify-content:space-between;align-items:center}
 .sheet-top h2{font-size:20px}
 .sheet-top button{width:36px;height:36px;border:2.5px solid var(--ink);border-radius:50%;background:#fff;font-size:18px;line-height:1}
@@ -309,6 +318,8 @@ body.lock{overflow:hidden}
     </div>
   </header>
 
+  <div class="card viewbar" id="viewBar" hidden><span>👀 檢視模式：只能看進度，不能修改</span><button type="button" id="toEdit">輸入通關碼編輯</button></div>
+
   <div class="glance" aria-label="三層進度">
     <button class="g" data-go="day"><i class="g-ring" id="gDay"><b></b></i><span>今日<small>今天的任務</small></span></button>
     <button class="g" data-go="week"><i class="g-ring" id="gWeek" style="--c:var(--pink)"><b></b></i><span>本週<small id="gWeekN"></small></span></button>
@@ -476,6 +487,7 @@ body.lock{overflow:hidden}
     <div class="field"><label for="codeIn">通關碼</label><input id="codeIn" type="password" required></div>
     <p class="share-hint" id="codeErr" style="text-align:left;color:#C0392B"></p>
     <div class="sheet-act"><button type="submit" class="save">進入</button></div>
+    <div class="sheet-act" style="margin-top:0"><button type="button" class="ghost" id="toView">不用通關碼，只看進度</button></div>
   </form>
 </div>
 
@@ -659,7 +671,9 @@ if (!S || !S.days) S = seed();
 if (!S.people) S.people = [];
 if (!S.lu) S.lu = {left:CONFIG.main.leftStart};
 /* 存檔：先存在這台裝置，連上雲端時再同步。meta 是給 LINE 提醒用的計劃摘要 */
+let VIEW = false;   // 檢視模式：只能看，不能改，也絕不存檔或同步
 const save = () => {
+  if (VIEW) return;
   S.updated = Date.now();
   S.meta = {name: CONFIG.name, start: key(START), deadline: key(MAIN_END),
     weeks: WEEKS.map(w => ({n:w.n, s:key(w.s), e:key(w.e), phase:w.phase, target:w.bv, acts:w.acts}))};
@@ -672,7 +686,7 @@ let CLOUD = false, pushTimer = null;
 const codeGet = () => { try { return localStorage.getItem('darwin-code') || ''; } catch(e){ return ''; } };
 const api = (path, opt = {}) => fetch('api/' + path, {...opt, headers: {'content-type':'application/json', 'x-code': codeGet()}});
 function cloudPush(){
-  if (!CLOUD) return;
+  if (!CLOUD || VIEW) return;
   clearTimeout(pushTimer);
   pushTimer = setTimeout(() => { api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated||0})}).catch(()=>{}); }, 800);
 }
@@ -700,12 +714,25 @@ async function cloudPull(){
   } else if (S.updated) cloudPush();
   document.getElementById('codeBg').hidden = true; cloudUI(); showQuota(); return true;
 }
+const viewPref = v => { try { if (v === true) localStorage.setItem('darwin-view', '1'); else if (v === false) localStorage.removeItem('darwin-view'); return localStorage.getItem('darwin-view') === '1'; } catch(e){ return false; } };
+async function enterView(){
+  const j = await (await fetch('api/view')).json();
+  VIEW = true; viewPref(true); document.body.classList.add('view');
+  S = j.data || {}; S.people = []; S.days = S.days || {}; S.weeks = S.weeks || {}; S.cond = S.cond || {};
+  S.lu = S.lu || {left:CONFIG.main.leftStart}; S.line = {on:false, am:'08:00', pm:'21:00', wk:false};
+  $('codeBg').hidden = true; $('viewBar').hidden = false;
+  document.querySelectorAll('#tasks textarea, #dayBv, #dayNote, #luLeft').forEach(x => x.readOnly = true);
+  if (['list','line'].includes(location.hash.slice(1))) setTab('day');
+  warmDays(); render(); darwin('hello');
+  $('footNote').textContent = '檢視模式：看到的是主人最新的進度。';
+}
 async function cloudInit(){
   try {
     const j = await (await fetch('api/ping')).json();
     if (!j.ok) return;
     CLOUD = true; if (!CONFIG.ai.endpoint) CONFIG.ai.endpoint = 'api/ai';
     cloudUI();
+    if (location.hash === '#view' || (!codeGet() && viewPref())) return enterView();   // 網址加 #view 就直接進檢視模式
     if (!codeGet()) document.getElementById('codeBg').hidden = false; else await cloudPull();
   } catch(e){ /* 沒有後端：維持單機模式 */ }
 }
@@ -858,6 +885,7 @@ function renderDay(rebuild){
     `<div class="task blank"><span class="box">${PAW}</span>
       <input type="text" class="tt" id="task-new" placeholder="寫下一件今天要做的事，按 Enter 新增" aria-label="新增任務"></div>`;
   fitTasks();
+  if (VIEW) document.querySelectorAll('#tasks textarea').forEach(x => x.readOnly = true);
   $('dayBv').value = r.bv || '';
   $('dayNote').value = r.note || '';
 }
@@ -879,6 +907,7 @@ document.addEventListener('click', e => {
   const ds = b.dataset;
   if (ds.go){ setTab(ds.go); try{ location.hash = ds.go; }catch(_){} return; }
   if (ds.wk){ const w = WEEKS[selWeek.n-1+(+ds.wk)]; if (!w) return; selWeek = w; selDay = (TODAY>=w.s && TODAY<=w.e) ? TODAY : w.s; save(); render(); return; }
+  if (VIEW && !ds.w && !ds.d) return;
   if (ds.c){ const i = +ds.i, v = S.cond[ds.c]||0; S.cond[ds.c] = (v === i+1) ? i : i+1; }
   else if (ds.w){ selWeek = WEEKS[ds.w-1]; selDay = (TODAY>=selWeek.s && TODAY<=selWeek.e) ? TODAY : selWeek.s; }
   else if (ds.a){ const a = S.weeks[selWeek.n] || (S.weeks[selWeek.n]=[]); a[ds.a] = !a[ds.a]; }
@@ -894,6 +923,7 @@ document.addEventListener('click', e => {
   save(); render();
 });
 $('tasks').addEventListener('input', e => {
+  if (VIEW) return;
   if (e.target.dataset.ti !== undefined){ e.target.value = e.target.value.replace(/\n/g,''); fitTasks(); dayRec(selDay).tasks[e.target.dataset.ti].t = e.target.value; save(); renderLine(); }
 });
 function addTask(el){
@@ -903,8 +933,8 @@ function addTask(el){
 $('tasks').addEventListener('keydown', e => { if (e.key==='Enter' && !e.isComposing && e.target.id==='task-new'){ e.preventDefault(); addTask(e.target); } });
 $('tasks').addEventListener('focusout', e => { if (e.target.id==='task-new' && e.target.value.trim()){ const v=e.target.value.trim(); dayRec(selDay).tasks.push({t:v,d:false}); save(); render(); darwin('taskAdd',{task:v}); } });
 $('dayBv').addEventListener('change', e => { const v = +e.target.value||0; if (v>0) darwin('bv',{bv:v}); });
-$('dayBv').addEventListener('input', e => { dayRec(selDay).bv = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
-$('dayNote').addEventListener('input', e => { dayRec(selDay).note = e.target.value; save(); });
+$('dayBv').addEventListener('input', e => { if (VIEW) return; dayRec(selDay).bv = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
+$('dayNote').addEventListener('input', e => { if (VIEW) return; dayRec(selDay).note = e.target.value; save(); });
 $('lineWhere').addEventListener('change', e => { S.line.where = e.target.value; save(); renderLine(); });
 ['lineAm','linePm'].forEach((id,k) => {
   const el = $(id), from = k ? 17 : 6;
@@ -957,9 +987,9 @@ async function darwin(ev, d = {}, where = 'Day'){
     if (j && j.reply) show(j.reply);
   } catch(e){ /* 連不上就保留內建回應 */ }
 }
-$('luConds').addEventListener('click', e => { const b = e.target.closest('[data-lu]'); if (!b) return;
+$('luConds').addEventListener('click', e => { if (VIEW) return; const b = e.target.closest('[data-lu]'); if (!b) return;
   S.lu[b.dataset.lu] = S.lu[b.dataset.lu] ? 0 : 1; save(); render(); });
-$('luLeft').addEventListener('input', e => { S.lu.left = Math.max(0, +e.target.value || 0); save(); render(); });
+$('luLeft').addEventListener('input', e => { if (VIEW) return; S.lu.left = Math.max(0, +e.target.value || 0); save(); render(); });
 $('aiAsk').addEventListener('click', () => darwin('advice'));
 
 /* ---------- 打卡分享圖 ---------- */
@@ -1111,15 +1141,19 @@ $('pDel').addEventListener('click', e => { const b = e.currentTarget;
 
 const TABS = ['day','week','list','goal','line'];
 function setTab(t){
-  if (!TABS.includes(t)) t = 'day';
+  if (!TABS.includes(t) || (VIEW && (t==='list' || t==='line'))) t = 'day';
   document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== t);
   document.querySelectorAll('.tab').forEach(b => b.dataset.go===t ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
   document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
-  if (t==='day') fitTasks();
+  if (t==='day'){ fitTasks(); if (VIEW) document.querySelectorAll('#tasks textarea').forEach(x => x.readOnly = true); }
   if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
 }
 $('codeForm').addEventListener('submit', async e => { e.preventDefault();
   try { localStorage.setItem('darwin-code', $('codeIn').value.trim()); } catch(_){}
+  if (VIEW){
+    try { const r = await api('state'); if (r.status === 401){ $('codeErr').textContent = '通關碼不對，請再試一次。'; return; } } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; return; }
+    viewPref(false); try { history.replaceState(null, '', location.pathname); } catch(_){} location.reload(); return;
+  }
   $('codeErr').textContent = ''; try { await cloudPull(); } catch(_){ $('codeErr').textContent = '連線失敗，請稍後再試。'; } });
 $('lineTest').addEventListener('click', async e => { const b = e.currentTarget; b.disabled = true; $('lineMsg').textContent = '傳送中…';
   try { const j = await (await api('line/test', {method:'POST'})).json(); $('lineMsg').textContent = j.ok ? '已傳送，請看 LINE。' : (j.error || '傳送失敗。'); }
@@ -1128,6 +1162,9 @@ $('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.
   try { const j = await (await api('ai/test', {method:'POST'})).json();
     $('lineMsg').textContent = j.ok ? `AI 正常（${(j.ms/1000).toFixed(1)} 秒，${j.model}）：${j.reply}` : `AI 沒接上：${j.error || '未知錯誤'}（網址 ${j.base || '?'}，模型 ${j.model || '?'}）`; }
   catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
+$('toView').addEventListener('click', () => { enterView().catch(() => { $('codeErr').textContent = '連線失敗，請稍後再試。'; }); });
+$('toEdit').addEventListener('click', () => { $('codeErr').textContent = ''; $('codeBg').hidden = false; });
+$('codeBg').addEventListener('click', e => { if (e.target.id === 'codeBg' && VIEW) $('codeBg').hidden = true; });
 warmDays();
 applyMode();
 render();
