@@ -2,7 +2,16 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 加到主畫面：圖示、名稱、全螢幕開啟 -->
+<link rel="apple-touch-icon" href="img/app-icon-180.png">
+<link rel="icon" type="image/png" href="img/app-icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="達爾文">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFF3C9">
 <title>達爾文豪宅計劃</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Chiron+GoRound+TC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -42,7 +51,7 @@ button{cursor:pointer}
 h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
 .num{font-family:var(--display);font-variant-numeric:tabular-nums}
 
-.wrap{max-width:880px;margin:0 auto;padding:16px 16px 140px;display:grid;gap:16px}
+.wrap{max-width:880px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(140px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));display:grid;gap:16px}
 @media (min-width:900px){.wrap{padding-top:26px}}
 [hidden]{display:none!important}
 .page{display:grid;gap:16px;min-width:0}
@@ -62,7 +71,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
 @media (max-width:520px){.g{flex-direction:column;gap:4px;text-align:center;padding:8px 4px}.g span small{display:none}}
 
 /* 下方分頁選單 */
-.tabs{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);width:min(520px,calc(100% - 24px));z-index:20;
+.tabs{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(100% - 24px));z-index:20;
   display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px;background:var(--paper);
   border:3px solid var(--ink);border-radius:26px;box-shadow:0 6px 0 var(--ink)}
 .tab{border:2.5px solid transparent;background:transparent;border-radius:18px;padding:4px 0 3px;font-size:12px;font-weight:700;color:var(--ink-soft);
@@ -288,12 +297,12 @@ body.lock{overflow:hidden}
     <div class="hero-top">
       <img src="img/flower.png" alt="戴著橘色花圈的達爾文">
       <div>
-        <div class="eyebrow" style="font-family:var(--display);font-size:17px;letter-spacing:.04em;color:var(--orange)">Level Up</div>
-        <h1>達爾文豪宅計劃</h1>
-        <div class="count">距離 2/5 還有 <b id="daysLeft">0</b> 天</div>
+        <div class="eyebrow" style="font-family:var(--display);font-size:17px;letter-spacing:.04em;color:var(--orange)" id="siteEyebrow">Level Up</div>
+        <h1 id="siteTitle">達爾文豪宅計劃</h1>
+        <div class="count">距離 <span id="dlDate">2/5</span> 還有 <b id="daysLeft">0</b> 天</div>
       </div>
     </div>
-    <div class="lv" aria-label="Level Up 晉升路線">
+    <div class="lv" id="lvBox" aria-label="Level Up 晉升路線">
       <div class="lv-steps" id="lvSteps"></div>
       <div class="lv-sum"><img src="img/cat-jump.png" alt=""><p id="lvSum"></p></div>
       <button class="sharebtn" id="shareLv" hidden>晉升了，打卡分享</button>
@@ -303,7 +312,7 @@ body.lock{overflow:hidden}
   <div class="glance" aria-label="三層進度">
     <button class="g" data-go="day"><i class="g-ring" id="gDay"><b></b></i><span>今日<small>今天的任務</small></span></button>
     <button class="g" data-go="week"><i class="g-ring" id="gWeek" style="--c:var(--pink)"><b></b></i><span>本週<small id="gWeekN"></small></span></button>
-    <button class="g" data-go="goal"><i class="g-ring" id="gGoal" style="--c:var(--orange)"><b></b></i><span>總目標<small>Level Up</small></span></button>
+    <button class="g" data-go="goal"><i class="g-ring" id="gGoal" style="--c:var(--orange)"><b></b></i><span>總目標<small id="gGoalSub">Level Up</small></span></button>
   </div>
 
   <div class="page" data-page="day">
@@ -368,10 +377,10 @@ body.lock{overflow:hidden}
           <div id="roadMarks"></div>
           <div class="road-today" id="roadToday"><span>今天</span></div>
           <img class="road-cat" id="roadCat" src="img/cat-walk.png" alt="">
-          <div class="road-goal">經理級</div>
+          <div class="road-goal" id="roadGoal">經理級</div>
         </div>
       </section>
-    <section class="card" aria-label="Level Up 主目標">
+    <section class="card" id="luCard" aria-label="Level Up 主目標">
       <div class="sec-head"><h2>Level Up 主目標</h2><span class="eyebrow" id="luCount"></span></div>
       <div class="conds">
         <div class="conds" id="luConds"></div>
@@ -384,7 +393,7 @@ body.lock{overflow:hidden}
       </div>
     </section>
     <section class="card" aria-label="營養挑戰獎">
-      <div class="sec-head"><h2>營養挑戰獎 <small style="font-size:13px;color:var(--ink-soft)">輔助目標・3/31</small></h2><span class="eyebrow" id="condCount"></span></div>
+      <div class="sec-head"><h2>營養挑戰獎 <small id="chSub" style="font-size:13px;color:var(--ink-soft)">輔助目標・3/31</small></h2><span class="eyebrow" id="condCount"></span></div>
       <div class="conds" id="conds"></div>
     </section>
   </div>
@@ -394,6 +403,7 @@ body.lock{overflow:hidden}
       <div class="line-grid">
         <div>
           <div class="set"><label for="lineOn" id="lineOnL">開啟每日提醒</label><button class="sw" id="lineOn" role="switch" aria-labelledby="lineOnL" aria-checked="true"></button></div>
+          <div class="set"><label for="lineWhere">提醒發到哪裡</label><select id="lineWhere"><option value="private">私訊主人</option><option value="group">啦啦隊群組（標記主人）</option><option value="both">兩邊都發</option></select></div>
           <div class="set"><label for="lineAm">早上：今天的任務</label><select id="lineAm"></select></div>
           <div class="set"><label for="linePm">晚上：還沒完成的事</label><select id="linePm"></select></div>
           <div class="set" style="border:0"><label for="lineWk">每週日：下週預告與本週回顧</label><button class="sw" id="lineWk" role="switch" aria-label="每週回顧" aria-checked="true"></button></div>
@@ -481,10 +491,14 @@ body.lock{overflow:hidden}
 <script>
 /* ============ 可調整設定 ============ */
 const CONFIG = {
+  /* 模式：'levelup'＝以 Level Up 晉升為主、挑戰獎為輔；'challenge'＝只做營養挑戰獎 */
+  mode: 'levelup',
+  title: '達爾文豪宅計劃',
   name: '主人~喵',
   start: [2026, 11, 23],
   end:   [2027, 3, 31],
   bvTarget: 3000,
+  bvMarks: [1000, 2000, 3000],   // 挑戰獎模式：跑道上的 BV 里程碑
   counters: [   // 用貓掌蓋章的條件
     {id:'ufo',  title:'親自推薦新合格 UFO', target:2, hint:'需設定自動購貨才算合格'},
     {id:'tix',  title:'購買年會門票',       target:3, hint:'記得記下門票號碼'},
@@ -614,7 +628,8 @@ const STORE_KEY = 'darwin-challenge-v2';
 /* ==================================== */
 
 const D = a => new Date(a[0], a[1]-1, a[2]);
-const START = D(CONFIG.start), END = D(CONFIG.end), MAIN_END = D(CONFIG.main.deadline), DAY = 864e5;
+const LU = CONFIG.mode !== 'challenge';
+const START = D(CONFIG.start), END = D(CONFIG.end), MAIN_END = LU ? D(CONFIG.main.deadline) : END, DAY = 864e5;
 const key = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const md = d => (d.getMonth()+1)+'/'+d.getDate();
 const add = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
@@ -717,32 +732,55 @@ function renderLevel(){
   $('lvSum').innerHTML = `${L.until} 前升到${L.steps[L.steps.length-1].name}，共可領 <b>${wan(comm+bonus)}</b><small>佣金 ${wan(comm)} ＋ Level Up 獎金 ${wan(bonus)}${got?`　已入袋 ${wan(got)}`:''}</small>`;
   $('shareLv').hidden = lv < 1;
 }
+/* 依模式顯示或隱藏 Level Up 的區塊（只需做一次） */
+function applyMode(){
+  document.title = CONFIG.title; $('siteTitle').textContent = CONFIG.title;
+  $('dlDate').textContent = md(MAIN_END);
+  if (LU) return;
+  $('lvBox').hidden = true; $('luCard').hidden = true;
+  $('siteEyebrow').textContent = '健康與營養挑戰賽';
+  $('gGoalSub').textContent = '挑戰獎'; $('roadGoal').textContent = '挑戰獎';
+  $('chSub').textContent = '主目標・' + md(END);
+}
 function render(){
-  renderLevel();
+  if (LU) renderLevel();
   /* --- 總目標 --- */
   const bv = bvTotal();
   const parts = [clamp01(bv/CONFIG.bvTarget), ...CONFIG.counters.map(c => clamp01((S.cond[c.id]||0)/c.target))];
-  /* 主目標 Level Up：三個條件各佔一份，左邊 BV 佔三份 */
-  const M = CONFIG.main, left = +S.lu.left || 0, done3 = M.items.filter(x => S.lu[x.id]).length;
-  const total = (done3 + clamp01(left/M.leftTarget)*3) / 6;
+  let total;
   const timeP = clamp01((TODAY-START)/(MAIN_END-START));
-  $('luConds').innerHTML = M.items.map(x => `<div class="cond ${S.lu[x.id]?'done':''}"><h3>${x.title}</h3><div class="val num">${S.lu[x.id]?1:0} <small>/ 1</small></div>
-    <div class="paws"><button class="paw ${S.lu[x.id]?'on':''}" data-lu="${x.id}" aria-label="${x.title}${S.lu[x.id]?'，已完成':''}">${PAW}</button></div><div class="hint">${x.hint}</div></div>`).join('');
-  const nextT = M.tiers.find(t => left < t);
-  $('luCount').textContent = `已完成 ${done3 + (left>=M.leftTarget?1:0)} / 4`;
-  $('luLeftVal').textContent = left.toLocaleString(); $('luLeftBar').style.width = clamp01(left/M.leftTarget)*100+'%';
-  $('luLeftBox').classList.toggle('done', left >= M.leftTarget);
-  $('luLeftHint').textContent = nextT ? `離 ${nextT.toLocaleString()} 階還差 ${(nextT-left).toLocaleString()}　階梯：${M.tiers.map(t=>t.toLocaleString()).join('、')}` : '左邊已過 5,000 階！';
-  if (document.activeElement !== $('luLeft')) $('luLeft').value = left || '';
-  $('totalPct').textContent = Math.round(total*100);
   $('daysLeft').textContent = Math.max(0, Math.round((MAIN_END-TODAY)/DAY));
-  /* 跑道＝左邊 BV，每過一階領一筆 9,500（5,000 階領兩筆） */
-  const bvP = clamp01(left/M.leftTarget)*100, got = M.tiers.reduce((n,t,i) => n + (left>=t ? (i===M.tiers.length-1?2:1) : 0), 0);
-  $('roadFill').style.width = bvP+'%';
-  $('roadCat').style.left = 'clamp(20px, '+bvP+'%, calc(100% - 20px))';
-  $('roadMarks').innerHTML = M.tiers.map((t,i) => { const last = i===M.tiers.length-1;
-    return `<span class="mk ${left>=t?'on':''} ${last?'last':''}" style="left:${t/M.leftTarget*100}%"><b>9千5${last?'×2':''}</b><small>${t.toLocaleString()}</small></span>`; }).join('');
-  $('luChq').textContent = `Level Up 完成度　9千5 已達成 ${got} / 5 筆` + (got && !S.lu.expand ? '（完成擴展業務後領取）' : '');
+  if (LU) {
+    /* 主目標 Level Up：三個條件各佔一份，左邊 BV 佔三份 */
+    const M = CONFIG.main, left = +S.lu.left || 0, done3 = M.items.filter(x => S.lu[x.id]).length;
+    total = (done3 + clamp01(left/M.leftTarget)*3) / 6;
+    $('luConds').innerHTML = M.items.map(x => `<div class="cond ${S.lu[x.id]?'done':''}"><h3>${x.title}</h3><div class="val num">${S.lu[x.id]?1:0} <small>/ 1</small></div>
+      <div class="paws"><button class="paw ${S.lu[x.id]?'on':''}" data-lu="${x.id}" aria-label="${x.title}${S.lu[x.id]?'，已完成':''}">${PAW}</button></div><div class="hint">${x.hint}</div></div>`).join('');
+    const nextT = M.tiers.find(t => left < t);
+    $('luCount').textContent = `已完成 ${done3 + (left>=M.leftTarget?1:0)} / 4`;
+    $('luLeftVal').textContent = left.toLocaleString(); $('luLeftBar').style.width = clamp01(left/M.leftTarget)*100+'%';
+    $('luLeftBox').classList.toggle('done', left >= M.leftTarget);
+    $('luLeftHint').textContent = nextT ? `離 ${nextT.toLocaleString()} 階還差 ${(nextT-left).toLocaleString()}　階梯：${M.tiers.map(t=>t.toLocaleString()).join('、')}` : '左邊已過 5,000 階！';
+    if (document.activeElement !== $('luLeft')) $('luLeft').value = left || '';
+    $('totalPct').textContent = Math.round(total*100);
+    /* 跑道＝左邊 BV，每過一階領一筆 9,500（5,000 階領兩筆） */
+    const bvP = clamp01(left/M.leftTarget)*100, got = M.tiers.reduce((n,t,i) => n + (left>=t ? (i===M.tiers.length-1?2:1) : 0), 0);
+    $('roadFill').style.width = bvP+'%';
+    $('roadCat').style.left = 'clamp(20px, '+bvP+'%, calc(100% - 20px))';
+    $('roadMarks').innerHTML = M.tiers.map((t,i) => { const last = i===M.tiers.length-1;
+      return `<span class="mk ${left>=t?'on':''} ${last?'last':''}" style="left:${t/M.leftTarget*100}%"><b>9千5${last?'×2':''}</b><small>${t.toLocaleString()}</small></span>`; }).join('');
+    $('luChq').textContent = `Level Up 完成度　9千5 已達成 ${got} / 5 筆` + (got && !S.lu.expand ? '（完成擴展業務後領取）' : '');
+  } else {
+    /* 挑戰獎模式：五大條件平均；跑道＝營養產品 BV */
+    total = parts.reduce((a,b)=>a+b,0) / parts.length;
+    $('totalPct').textContent = Math.round(total*100);
+    const bvP = parts[0]*100, marks = CONFIG.bvMarks;
+    $('roadFill').style.width = bvP+'%';
+    $('roadCat').style.left = 'clamp(20px, '+bvP+'%, calc(100% - 20px))';
+    $('roadMarks').innerHTML = marks.map((t,i) => { const last = i===marks.length-1;
+      return `<span class="mk ${bv>=t?'on':''} ${last?'last':''}" style="left:${t/CONFIG.bvTarget*100}%"><b>${t.toLocaleString()}</b><small>BV</small></span>`; }).join('');
+    $('luChq').textContent = `挑戰獎完成度`;
+  }
   $('roadToday').style.left = (timeP*100)+'%';
   const ahead = total >= timeP - 0.02;
   $('pace').textContent = ahead ? '進度跟上了，好棒' : '慢慢來，我陪你';
@@ -820,10 +858,10 @@ function renderLine(){
   const L = S.line, r = peek(TODAY), left = r.tasks.filter(t=>!t.d);
   const w = weekOf(TODAY), dn = Math.round((TODAY-START)/DAY)+1;
   $('lineOn').setAttribute('aria-checked', L.on); $('lineWk').setAttribute('aria-checked', L.wk);
-  $('lineAm').value = L.am; $('linePm').value = L.pm;
+  $('lineAm').value = L.am; $('linePm').value = L.pm; $('lineWhere').value = L.where || 'private';
   const list = left.length ? left.map(t=>'・'+t.t).join('\n') : '・今天還沒寫任務，打開日誌填一件吧';
   $('linePrev').textContent = L.on
-    ? `🐾 ${CONFIG.name}早安！我是最愛你的達爾文\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 2/5 還有 ${$('daysLeft').textContent} 天`
+    ? `🐾 ${CONFIG.name}早安！我是最愛你的達爾文\n今天是計劃第 ${dn} 天（第 ${w.n} 週）\n\n今天要做的事：\n${list}\n\n總進度 ${$('totalPct').textContent}%，距離 ${md(MAIN_END)} 還有 ${$('daysLeft').textContent} 天`
     : '提醒已關閉，達爾文先去睡覺了。';
 }
 
@@ -859,6 +897,7 @@ $('tasks').addEventListener('focusout', e => { if (e.target.id==='task-new' && e
 $('dayBv').addEventListener('change', e => { const v = +e.target.value||0; if (v>0) darwin('bv',{bv:v}); });
 $('dayBv').addEventListener('input', e => { dayRec(selDay).bv = Math.max(0, +e.target.value||0); save(); const keep = document.activeElement; render(); keep.focus(); });
 $('dayNote').addEventListener('input', e => { dayRec(selDay).note = e.target.value; save(); });
+$('lineWhere').addEventListener('change', e => { S.line.where = e.target.value; save(); renderLine(); });
 ['lineAm','linePm'].forEach((id,k) => {
   const el = $(id), from = k ? 17 : 6;
   for (let h=from; h<from+7; h++) for (const m of ['00','30']) el.add(new Option(String(h).padStart(2,'0')+':'+m));
@@ -1082,6 +1121,7 @@ $('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.
     $('lineMsg').textContent = j.ok ? `AI 正常（${(j.ms/1000).toFixed(1)} 秒，${j.model}）：${j.reply}` : `AI 沒接上：${j.error || '未知錯誤'}（網址 ${j.base || '?'}，模型 ${j.model || '?'}）`; }
   catch(_){ $('lineMsg').textContent = '連線失敗，請稍後再試。'; } b.disabled = false; });
 warmDays();
+applyMode();
 render();
 cloudInit();
 darwin('hello'); darwin('listHello', {}, 'List');
