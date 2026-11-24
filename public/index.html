@@ -122,7 +122,6 @@ body.lock{overflow:hidden}
 /* 檢視模式：只能看，不能改 */
 body.view .tab[data-go=list], body.view .tab[data-go=line], body.view #reset, body.view .task.blank, body.view .del, body.view #aiAsk{display:none!important}
 body.view .tabs{grid-template-columns:repeat(3,1fr)}
-body.view .field:has(#dayNote){display:none}
 body.view #tasks .tt, body.view #tasks .box, body.view #weekActions .box, body.view .paw, body.view #dayBv, body.view #dayNote, body.view #luLeft{pointer-events:none}
 body.view #tasks .tt{border-bottom-color:transparent}
 .sheet-top{display:flex;justify-content:space-between;align-items:center}
@@ -722,6 +721,7 @@ async function enterView(){
   S.lu = S.lu || {left:CONFIG.main.leftStart}; S.line = {on:false, am:'08:00', pm:'21:00', wk:false};
   $('codeBg').hidden = true; $('viewBar').hidden = false;
   document.querySelectorAll('#tasks textarea, #dayBv, #dayNote, #luLeft').forEach(x => x.readOnly = true);
+  $('dayNote').placeholder = '主人今天還沒寫小筆記';
   if (['list','line'].includes(location.hash.slice(1))) setTab('day');
   warmDays(); render(); darwin('hello');
   $('footNote').textContent = '檢視模式：看到的是主人最新的進度。';

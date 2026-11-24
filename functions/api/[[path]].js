@@ -1,7 +1,7 @@
 /* 達爾文豪宅計劃 — Cloudflare Pages Functions
  * 路由：
  *   GET  /api/ping           是否有後端
- *   GET  /api/view           檢視模式用的紀錄，不用通關碼（不含名單、每日筆記、提醒設定）
+ *   GET  /api/view           檢視模式用的紀錄，不用通關碼（不含名單、提醒設定）
  *   GET  /api/state          讀取紀錄（需通關碼）
  *   PUT  /api/state          儲存紀錄（需通關碼）
  *   POST /api/ai             達爾文 AI 回應，轉呼叫 MiniMax（需通關碼）
@@ -333,7 +333,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
       const st = await loadState(env);
       if (!st || !st.data) return json({ data: null, updated: 0 });
       const S = st.data, days = {};
-      for (const [k, r] of Object.entries(S.days || {})) days[k] = { tasks: (r.tasks || []).map(t => ({ t: String(t.t), d: !!t.d })), bv: +r.bv || 0 };
+      for (const [k, r] of Object.entries(S.days || {})) days[k] = { tasks: (r.tasks || []).map(t => ({ t: String(t.t), d: !!t.d })), bv: +r.bv || 0, note: String(r.note || '') };
       return json({ data: { days, weeks: S.weeks || {}, cond: S.cond || {}, lu: S.lu || {}, meta: S.meta || {}, shareStyle: S.shareStyle || 0 }, updated: st.updated });
     }
     if (!env.ACCESS_CODE || request.headers.get('x-code') !== env.ACCESS_CODE) return json({ error: 'code' }, 401);
