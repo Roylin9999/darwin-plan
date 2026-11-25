@@ -1433,7 +1433,9 @@ $('fAdd').addEventListener('click', () => { if (VIEW) return;
   if (FL.today && FL.today[log.type]) $('fMsg').textContent += '　' + FL.today[log.type];
 });
 /* 時間軸編輯：接觸紀錄可改日期／內容／刪除；跟進可改日期。
-   改「最新一筆接觸」的日期時，它排出來、還沒完成的跟進會一起往前或往後挪同樣天數。 */
+   改「最新一筆接觸」的日期時，它排出來、還沒完成的跟進會一起往前或往後挪同樣天數。
+   改某一筆跟進的日期時，它後面還沒完成的跟進也一起挪同樣天數（保持原本的跟進週期）。
+   刪除「最新一筆接觸」時，它排出來、還沒完成的跟進一起刪除。 */
 function pickDate(btn, cur, done){   /* 在按鈕旁邊冒出一個日期欄，選好就套用 */
   const box = btn.closest('.fx'); if (box.querySelector('input')) return;
   box.insertAdjacentHTML('beforeend', `<input type="date" value="${cur}" style="font:inherit;font-size:13px;border:2px solid var(--ink);border-radius:8px;padding:0 4px;min-width:0"><button type="button" class="okd">確定</button>`);
@@ -1450,7 +1452,13 @@ $('fTl').addEventListener('click', e => { if (VIEW) return;
   if ((t = q('fd'))){ const f = draft.fu[+t.dataset.fd]; f.done = !f.done; delete f.auto; }
   else if ((t = q('fx'))) draft.fu.splice(+t.dataset.fx, 1);
   else if ((t = q('fdd'))){ const f = draft.fu[+t.dataset.fdd];
-    return pickDate(t, f.d, v => { f.d = v; drawTl(); drawChips(); keepPerson(); }); }
+    return pickDate(t, f.d, v => {   /* 改這筆跟進的日期：後面還沒做的跟進一起挪同樣天數，保持原本的跟進週期 */
+      const old = f.d, n = dayDiff(old, v);
+      let moved = 0;
+      (draft.fu || []).forEach(o => { if (o !== f && !o.done && !o.auto && o.d > old){ o.d = addDays(o.d, n); moved++; } });
+      f.d = v; drawTl(); drawChips(); keepPerson();
+      $('fMsg').textContent = moved ? `已改日期，後面 ${moved} 個跟進也一起${n > 0 ? '延後' : '提前'} ${Math.abs(n)} 天。` : '已改日期。';
+    }); }
   else if ((t = q('ld'))){ const i = +t.dataset.ld, l = draft.log[i];
     return pickDate(t, l.d, v => {
       const latest = draft.log.every((o, j) => j === i || o.d <= l.d);
@@ -1460,7 +1468,14 @@ $('fTl').addEventListener('click', e => { if (VIEW) return;
     }); }
   else if ((t = q('ln'))){ const l = draft.log[+t.dataset.ln];
     const v = prompt('修改這次接觸的內容', l.note || ''); if (v === null) return; l.note = v.trim(); }
-  else if ((t = q('lx'))){ if (!confirm('刪除這筆接觸紀錄？（已排好的跟進不會刪，要的話可以個別刪）')) return; draft.log.splice(+t.dataset.lx, 1); }
+  else if ((t = q('lx'))){ const i = +t.dataset.lx, l = draft.log[i];
+    /* 刪除最新一筆接觸：它排出來、還沒完成的跟進一起刪掉 */
+    const latest = draft.log.every((o, j) => j === i || o.d <= l.d);
+    const mine = latest ? (draft.fu || []).filter(f => !f.done && !f.auto && f.d >= l.d) : [];
+    if (!confirm(mine.length ? `刪除這筆接觸紀錄？它排好的 ${mine.length} 個跟進也會一起刪除。` : '刪除這筆接觸紀錄？')) return;
+    draft.log.splice(i, 1);
+    if (mine.length) draft.fu = draft.fu.filter(f => !mine.includes(f));
+    $('fMsg').textContent = mine.length ? `已刪除，連同 ${mine.length} 個跟進。` : '已刪除。'; }
   else return;
   drawTl(); drawChips(); keepPerson();
 });
