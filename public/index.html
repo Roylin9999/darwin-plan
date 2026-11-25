@@ -329,7 +329,7 @@ body.view #tasks .tt{border-bottom-color:transparent}
 .tl li.fu.ok::before{background:var(--green)}
 .tl .dt{font-weight:700;margin-right:6px}
 .tl small{display:block;color:var(--ink-soft);font-size:12px}
-.tl .fx{display:inline-flex;gap:6px;margin-left:6px}
+.tl .fx{display:inline-flex;flex-wrap:wrap;gap:6px;margin-left:6px}
 .tl .fx button{border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:0 8px;cursor:pointer}
 .tl li.ok .t{text-decoration:line-through;color:var(--ink-soft)}
 .futoday{margin:12px 0 4px;background:#FFF0E6;border:2.5px solid var(--ink);border-radius:16px;padding:10px 12px}
@@ -1396,10 +1396,11 @@ function drawTl(){
   $('fTl').innerHTML = items.length ? items.map(x => {
     const day = md(new Date(x.d + 'T00:00'));
     if (x.k === 'log'){ const l = x.l;
-      return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}</li>`; }
+      return `<li><span class="dt">${day}</span>${esc(l.type)}${l.result?'・'+esc(l.result):''}${l.product?'・'+esc(l.product):''}${l.note?`<small>${esc(l.note)}</small>`:''}
+      <span class="fx"><button type="button" data-ld="${x.i}">改日期</button><button type="button" data-ln="${x.i}">改內容</button><button type="button" data-lx="${x.i}">刪除</button></span></li>`; }
     const f = x.f, late = !f.done && f.d < tk();
     return `<li class="fu ${f.done?'ok':''} ${late?'late':''}"><span class="dt">${day}</span><span class="t">跟進：${esc(f.t)}</span>${f.x?`<small>${esc(f.x)}</small>`:''}${late?`<small>逾期 ${lateDays(f.d)} 天</small>`:''}
-      <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
+      <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fdd="${x.i}">改日期</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
     : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
 }
 function keepPerson(){ if (VIEW) return; if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
@@ -1413,12 +1414,35 @@ $('fAdd').addEventListener('click', () => { if (VIEW) return;
   $('fMsg').textContent = n ? `已排好 ${n} 個跟進，下一次：${md(new Date(nx.d+'T00:00'))} ${nx.t}` + (pEdit<0 ? '（記得按儲存）' : '') : '已記錄。';
   if (FL.today && FL.today[log.type]) $('fMsg').textContent += '　' + FL.today[log.type];
 });
+/* 時間軸編輯：接觸紀錄可改日期／內容／刪除；跟進可改日期。
+   改「最新一筆接觸」的日期時，它排出來、還沒完成的跟進會一起往前或往後挪同樣天數。 */
+function pickDate(btn, cur, done){   /* 在按鈕旁邊冒出一個日期欄，選好就套用 */
+  const box = btn.closest('.fx'); if (box.querySelector('input')) return;
+  box.insertAdjacentHTML('beforeend', `<input type="date" value="${cur}" style="font:inherit;font-size:13px;border:2px solid var(--ink);border-radius:8px;padding:0 4px;min-width:0"><button type="button" class="okd">確定</button>`);
+  const inp = box.querySelector('input');
+  box.querySelector('.okd').addEventListener('click', ev => { ev.stopPropagation(); const v = inp.value; if (v && v !== cur) done(v); else drawTl(); });
+  try { inp.showPicker && inp.showPicker(); } catch(_) {}
+}
+const dayDiff = (a, b) => Math.round((new Date(b+'T00:00') - new Date(a+'T00:00')) / 864e5);
 $('fTl').addEventListener('click', e => { if (VIEW) return;
-  const a = e.target.closest('[data-fd]'), b = e.target.closest('[data-fx]');
-  if (a){ const f = draft.fu[+a.dataset.fd]; f.done = !f.done; delete f.auto; }
-  else if (b) draft.fu.splice(+b.dataset.fx, 1);
+  const q = k => e.target.closest('[data-'+k+']');
+  let t;
+  if ((t = q('fd'))){ const f = draft.fu[+t.dataset.fd]; f.done = !f.done; delete f.auto; }
+  else if ((t = q('fx'))) draft.fu.splice(+t.dataset.fx, 1);
+  else if ((t = q('fdd'))){ const f = draft.fu[+t.dataset.fdd];
+    return pickDate(t, f.d, v => { f.d = v; drawTl(); drawChips(); keepPerson(); }); }
+  else if ((t = q('ld'))){ const i = +t.dataset.ld, l = draft.log[i];
+    return pickDate(t, l.d, v => {
+      const latest = draft.log.every((o, j) => j === i || o.d <= l.d);
+      if (latest){ const n = dayDiff(l.d, v); (draft.fu || []).forEach(f => { if (!f.done && f.d >= l.d) f.d = addDays(f.d, n); }); }
+      l.d = v; drawTl(); drawChips(); keepPerson();
+      $('fMsg').textContent = latest ? '已改日期，後面還沒做的跟進也一起調整好了。' : '已改日期。';
+    }); }
+  else if ((t = q('ln'))){ const l = draft.log[+t.dataset.ln];
+    const v = prompt('修改這次接觸的內容', l.note || ''); if (v === null) return; l.note = v.trim(); }
+  else if ((t = q('lx'))){ if (!confirm('刪除這筆接觸紀錄？（已排好的跟進不會刪，要的話可以個別刪）')) return; draft.log.splice(+t.dataset.lx, 1); }
   else return;
-  drawTl(); keepPerson();
+  drawTl(); drawChips(); keepPerson();
 });
 /* 日計劃：今天要跟進的人 */
 function renderFuToday(){
