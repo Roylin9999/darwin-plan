@@ -1445,19 +1445,20 @@ $('fTl').addEventListener('click', e => { if (VIEW) return;
   drawTl(); drawChips(); keepPerson();
 });
 /* 日計劃：今天要跟進的人 */
-function renderFuToday(){
-  const box = $('fuToday');
-  if (+selDay !== +TODAY){ box.hidden = true; return; }
-  const due = dueList();
+function renderFuToday(){   /* 今天：今天到期＋逾期的；其他日子：排在那一天的跟進（可以提前看、提前完成） */
+  const box = $('fuToday'), isToday = +selDay === +TODAY, dk = key(selDay);
+  const due = isToday ? dueList()
+    : S.people.flatMap((p,i) => (p.fu || []).filter(f => f.d === dk && !f.auto).map(f => ({p, i, f})));
   if (!due.length){ box.hidden = true; return; }
   box.hidden = false;
-  box.innerHTML = `<h3>今天要跟進 ${due.length} 位</h3>` + due.map(({p,i,f}) => {
-    const late = f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
-    return `<div class="row"><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${esc(f.t)}${f.x?`<small style="display:block;color:var(--ink-soft);font-size:12px">${esc(f.x)}</small>`:''}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">完成</button></div>`; }).join('');
+  const left = due.filter(x => !x.f.done).length;
+  box.innerHTML = `<h3>${isToday ? '今天' : md(selDay) + ' '}要跟進 ${due.length} 位${!isToday && left < due.length ? `（還沒做 ${left} 位）` : ''}</h3>` + due.map(({p,i,f}) => {
+    const late = isToday && f.d < tk() ? `<span class="late">逾期 ${lateDays(f.d)} 天</span>` : '';
+    return `<div class="row"${f.done ? ' style="opacity:.55"' : ''}><button type="button" class="who" data-fp="${i}">${esc(p.name)}</button><span>${f.done ? '✅ ' : ''}${esc(f.t)}${f.x?`<small style="display:block;color:var(--ink-soft);font-size:12px">${esc(f.x)}</small>`:''}</span>${late}<button type="button" class="ok" data-fok="${i}:${p.fu.indexOf(f)}">${f.done ? '復原' : '完成'}</button></div>`; }).join('');
 }
 $('fuToday').addEventListener('click', e => {
   const o = e.target.closest('[data-fok]'), w = e.target.closest('[data-fp]');
-  if (o && !VIEW){ const [i,j] = o.dataset.fok.split(':').map(Number); S.people[i].fu[j].done = true; save(); renderFuToday(); renderPeople(); }
+  if (o && !VIEW){ const [i,j] = o.dataset.fok.split(':').map(Number); const f = S.people[i].fu[j]; f.done = !f.done; delete f.auto; save(); renderFuToday(); renderPeople(); }
   else if (w){ setTab('list'); openSheet(+w.dataset.fp); }
 });
 /* 一鍵複製：基本資料＋接觸紀錄＋接下來的跟進，排成可以直接貼到 LINE 的文字 */
