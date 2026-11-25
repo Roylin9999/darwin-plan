@@ -733,7 +733,7 @@ const CONFIG = {
   /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
   follow: {
     types: ['分享產品','健康問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
-    results: ['有興趣','考慮中','沒興趣','未接／未回','已購買','已加入'],
+    results: ['有興趣','考慮中','下次再約','沒興趣','未接／未回','已購買','已加入'],
     byType: {
       '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
       /* 問卷當天＝第 1 天：跟對方一起看結果、挑 2–4 款產品、存好推薦、約好下次跟進 */
@@ -782,6 +782,7 @@ const CONFIG = {
     /* 結果比類型優先：選了這些結果，就改用這裡的跟進 */
     byResult: {
       '未接／未回': [[1,'再聯絡一次']],
+      '下次再約':   [[3,'再約一次：問他最近哪天方便','這次時間不合沒關係；關心近況、分享一點活動亮點，直接給兩個時間讓他選']],   // ← 幾天後再約，可改
       '沒興趣':     [[30,'過一個月再輕鬆問候']],
       '已購買':     [
         [2,'第 3 天關懷：確認收到產品、提醒用法','傳訊息確認是否收到產品；提醒正確、持續使用的方法；問「使用上有沒有遇到什麼問題呢？」'],
@@ -1415,7 +1416,7 @@ function keepPerson(){ if (VIEW) return; if (pEdit >= 0){ S.people[pEdit].log = 
 $('fAdd').addEventListener('click', () => { if (VIEW) return;
   const log = {d: $('fDate').value || tk(), type: $('fType').value, result: $('fResult').value, product: $('fProd').value.trim(), note: $('fNote').value.trim()};
   draft.log = (draft.log || []).concat(log);
-  const inv = FL.invite && FL.invite[log.type];
+  const inv = log.result !== '下次再約' && FL.invite && FL.invite[log.type];   /* 下次再約＝這次沒約成，不排活動 */
   let n;
   if (inv){   /* 邀約：記下邀約，再在活動那天記下活動，從活動那天排跟進 */
     const when = $('fWhen').value || addDays(log.d, 1);
@@ -1441,7 +1442,8 @@ function pickDate(btn, cur, done){   /* 在按鈕旁邊冒出一個日期欄，�
   try { inp.showPicker && inp.showPicker(); } catch(_) {}
 }
 const dayDiff = (a, b) => Math.round((new Date(b+'T00:00') - new Date(a+'T00:00')) / 864e5);
-$('fType').addEventListener('change', () => { $('fWhenBox').hidden = !(FL.invite && FL.invite[$('fType').value]); });
+const syncWhen = () => { $('fWhenBox').hidden = !(FL.invite && FL.invite[$('fType').value]) || $('fResult').value === '下次再約'; };
+$('fType').addEventListener('change', syncWhen); $('fResult').addEventListener('change', syncWhen);
 $('fTl').addEventListener('click', e => { if (VIEW) return;
   const q = k => e.target.closest('[data-'+k+']');
   let t;
