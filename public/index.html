@@ -367,6 +367,10 @@ body.view #tasks .tt{border-bottom-color:transparent}
 .airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .airow button:disabled{opacity:.6}
+.qguess{margin:8px 0 0;font-size:13px;background:var(--orange-soft);border-radius:10px;padding:6px 10px}
+.qmbox,.pmerge{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.qmbox select,.pmerge select{font:inherit;font-size:14px;border:2px solid var(--ink);border-radius:10px;padding:4px 6px;background:#fff;max-width:12em}
+.pmerge button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:5px 12px}
 .wcount small{display:block;color:var(--ink-soft);font-size:12px;font-weight:400}
 .wcount .box{cursor:default}
 /* 問卷專區：主要動作綠色，其餘白底；連結按鈕不要底線 */
@@ -612,7 +616,7 @@ body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
     <ul class="tl" id="fTl"></ul>
     <div class="grp">備註</div>
     <div class="field"><textarea id="pNote" aria-label="備註" style="min-height:90px" placeholder="個性、背景故事、上次談話重點、對方的顧慮…"></textarea></div>
-    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="button" class="copybtn" id="pCopy">複製給 Leader</button><button type="submit" class="save">儲存</button></div>
+    <div class="sheet-act"><button type="button" class="kill" id="pDel" hidden>刪除</button><button type="button" class="ghost" id="pMerge" hidden>合併到…</button><span id="pMergeBox" class="pmerge"></span><button type="button" class="copybtn" id="pCopy">複製給 Leader</button><button type="submit" class="save">儲存</button></div>
   </form>
 </div>
 
@@ -966,29 +970,40 @@ function quizNorm(it){
     symptoms: it.symptoms || arr(a[QZ_SYM]),
     products: it.products || (it.recs || []).map(r => r.name) };
 }
-function quizImport(raw){
+/* 問卷對應到名單上的哪一位：先看紀錄上的問卷編號（合併過的小名也找得到），再看名字／別名 */
+function quizPerson(raw){
+  const it = quizNorm(raw);
+  let i = it.id ? S.people.findIndex(p => (p.log || []).some(l => l.qid === it.id)) : -1;
+  if (i < 0) i = S.people.findIndex(p => p.name === it.name || (p.alias || []).includes(it.name));
+  return i;
+}
+/* 猜可能是同一個人：名字互相包含（小名、去掉姓） */
+function quizGuess(name){
+  const n = String(name || '').trim(); if (!n) return -1;
+  return S.people.findIndex(p => p.name && (p.name.includes(n) || n.includes(p.name) || (n.length >= 2 && p.name.slice(-2) === n.slice(-2))));
+}
+function quizImport(raw, target){   /* target：要合併進去的名單 index；不給就用名字找，找不到就新增 */
   const it = quizNorm(raw); if (!it.name) return null;
-  S.quizDone = S.quizDone || [];
-  if (it.id && S.quizDone.includes(it.id)) return null;
-  let p = S.people.find(x => x.name === it.name);
-  const dup = p && (p.log || []).some(l => QZ_TYPES.includes(l.type) && l.d === it.date);
+  let p = target >= 0 ? S.people[target] : S.people.find(x => x.name === it.name);
+  const dup = p && (p.log || []).some(l => it.id ? l.qid === it.id : (QZ_TYPES.includes(l.type) && l.d === it.date && !l.qid));
   if (!dup){
     if (!p){ p = {name: it.name, side:'未定', status: PC.status[0], health:'想調整', note:''}; S.people.unshift(p); }
     const bits = [it.focus.length ? '在意：' + it.focus.join('、') : '', it.symptoms.length ? '狀況：' + it.symptoms.join('、') : ''].filter(Boolean).join('；');
     const memo = md(new Date(it.date + 'T00:00')) + ' 60秒問卷' + (bits ? '：' + bits : '');
     p.note = p.note ? p.note + '\n' + memo : memo;
     if (it.age && !p.age && /^\d+$/.test(it.age)) p.age = it.age;
-    const log = {d: it.date, type: QZ_TYPE, result:'', product: it.products.join('、'), note: bits ? '60秒問卷 ' + bits : '60秒問卷'};
+    if (p.name !== it.name){ p.alias = [...new Set((p.alias || []).concat(it.name))]; }   /* 用小名填的：記成別名 */
+    const log = {d: it.date, type: QZ_TYPE, result:'', product: it.products.join('、'), note: (bits ? '60秒問卷 ' + bits : '60秒問卷') + (p.name !== it.name ? `（問卷上填「${it.name}」）` : ''), qid: it.id || ''};
     p.log = (p.log || []).concat(log); planFollow(p, log);
   }
-  if (it.id){ S.quizDone.push(it.id); if (S.quizDone.length > 600) S.quizDone = S.quizDone.slice(-600); }
   return dup ? null : p;
 }
 /* 刪除問卷時，把名單裡對應的紀錄拿掉：這個人只有這筆問卷 → 整個人刪掉；還有別的紀錄 → 只刪問卷那筆和它排的跟進 */
 function quizUnlink(raw){
-  const it = quizNorm(raw), pi = S.people.findIndex(x => x.name === it.name); if (pi < 0) return '';
+  const it = quizNorm(raw), pi = quizPerson(raw); if (pi < 0) return '';
   const p = S.people[pi], logs = p.log || [];
-  const li = logs.findIndex(l => QZ_TYPES.includes(l.type) && l.d === it.date); if (li < 0) return '';
+  let li = it.id ? logs.findIndex(l => l.qid === it.id) : -1;
+  if (li < 0) li = logs.findIndex(l => QZ_TYPES.includes(l.type) && l.d === it.date); if (li < 0) return '';
   if (logs.length === 1){ S.people.splice(pi, 1); return 'person'; }
   logs.splice(li, 1);
   const day = md(new Date(it.date + 'T00:00'));
@@ -1036,16 +1051,18 @@ function renderQuiz(){
   const qm = $('qMore'); qm.hidden = QZ.length <= QZ_SHOW;
   qm.textContent = qzOpen ? '收合問卷 ▲' : `顯示全部 ${QZ.length} 份 ▼`;
   box.innerHTML = (qzOpen ? QZ : QZ.slice(0, QZ_SHOW)).map((it, i) => {
-    const n = quizNorm(it), pi = S.people.findIndex(p => p.name === n.name), p = S.people[pi];
+    const n = quizNorm(it), pi = quizPerson(it), p = S.people[pi];
     const nf = p ? fuOpen(p)[0] : null;
     const ans = Object.entries(it.answers || {}).map(([k, v]) => `<dt>${esc(k.replace(/[？?]$/, ''))}</dt><dd>${esc(arr(v).join('、'))}</dd>`).join('');
     const recs = (it.recs || []).map(r => `<div class="rec">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>` : `<span>${esc(r.name)}</span>`}<span>符合 ${+r.match || 0}%</span></div>`).join('');
-    return `<details class="qz" data-qi="${i}"><summary><b>${esc(n.name)}</b><span class="tag ${p ? '' : 'new'}">${p ? (nf ? '下次跟進 ' + md(new Date(nf.d + 'T00:00')) : '已在名單') : '未加入名單'}</span>
+    const gi = p ? -1 : quizGuess(n.name);
+    return `<details class="qz" data-qi="${i}"><summary><b>${esc(n.name)}${p && p.name !== n.name ? `<small style="font-weight:400"> → ${esc(p.name)}</small>` : ''}</b><span class="tag ${p ? '' : 'new'}">${p ? (nf ? '下次跟進 ' + md(new Date(nf.d + 'T00:00')) : '已在名單') : '未加入名單'}</span>
       <small>${fmtAt(it.at)}${n.age ? '・' + esc(n.age) : ''}${n.focus.length ? '・在意：' + esc(n.focus.join('、')) : ''}</small></summary>
       ${recs ? `<h4>推薦產品</h4>${recs}` : ''}
       ${ans ? `<h4>作答內容</h4><dl>${ans}</dl>` : ''}
-      <div class="airow">${p ? `<button type="button" data-qp="${pi}">打開名單</button>` : `<button type="button" data-qadd="${i}">加進名單</button>`}
-        <button type="button" data-qai="${i}">${adv[it.id] ? '重寫跟進建議' : 'AI 跟進建議'}</button><button type="button" data-qcp="all">複製結果</button><button type="button" class="qdel" data-qdel="1">刪除</button><span class="qmsg"></span></div>
+      ${gi >= 0 ? `<p class="qguess">名單裡有「${esc(S.people[gi].name)}」，是同一個人嗎？可以用「合併到…」把問卷併進去。</p>` : ''}
+      <div class="airow">${p ? `<button type="button" data-qp="${pi}">打開名單</button><button type="button" data-qun="1">移出名單</button>` : `<button type="button" data-qadd="${i}">加進名單</button><button type="button" data-qmg="${gi}">合併到…</button>`}
+        <span class="qmbox"></span><button type="button" data-qai="${i}">${adv[it.id] ? '重寫跟進建議' : 'AI 跟進建議'}</button><button type="button" data-qcp="all">複製結果</button><button type="button" class="qdel" data-qdel="1">刪除</button><span class="qmsg"></span></div>
       <div class="qadv">${advHtml(adv[it.id])}</div></details>`;
   }).join('');
 }
@@ -1057,11 +1074,10 @@ async function loadQuiz(force){
     const j = await (await api('quiz')).json();
     if (j.error){ $('quizMsg').textContent = j.error; return; }
     QZ = j.items || [];
-    const before = (S.quizDone || []).length, soft = quizSoften();
-    const added = QZ.slice().reverse().map(quizImport).filter(Boolean).length;   /* 舊的先加，名單上新的在前面 */
-    if ((S.quizDone || []).length !== before || soft) await pushNow().catch(() => {});
-    if (added){ render(); renderPeople(); }
-    $('quizMsg').textContent = `共 ${QZ.length} 份` + (added ? `，新加進名單 ${added} 位` : '');
+    const soft = quizSoften();   /* 不再自動加進名單：測試的問卷不會混進來，要的再按「加進名單」或「合併到…」 */
+    if (soft) await pushNow().catch(() => {});
+    const wait = QZ.filter(x => quizPerson(x) < 0).length;
+    $('quizMsg').textContent = `共 ${QZ.length} 份` + (wait ? `，${wait} 份還沒加進名單` : '');
   } catch(e){ $('quizMsg').textContent = '連線失敗，請稍後再試。'; }
   renderQuiz();
 }
@@ -1086,7 +1102,20 @@ $('qList').addEventListener('click', async e => {
       $('quizMsg').textContent = `已刪除 ${quizNorm(it).name} 的問卷` + (r === 'person' ? '，名單裡的這個人也一起刪除了。' : r === 'log' ? '；名單裡這個人還有其他紀錄，所以只刪掉問卷那一筆。' : '。');
     } catch(_){ msg.textContent = '連線失敗，請稍後再試。'; b.disabled = false; }
     return; }
-  if (b.dataset.qadd){ quizImport({...it, id: ''}); S.quizDone = (S.quizDone || []).concat(it.id); await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz(); return; }
+  if (b.dataset.qadd){ quizImport(it); await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz(); $('quizMsg').textContent = `已把 ${quizNorm(it).name} 加進名單。`; return; }
+  if (b.dataset.qmg !== undefined){   /* 合併到名單上已有的人：選一位 → 確定 */
+    const box = card.querySelector('.qmbox'); if (box.innerHTML){ box.innerHTML = ''; return; }
+    const g = +b.dataset.qmg;
+    box.innerHTML = `<select class="qmsel">${S.people.map((p, k) => `<option value="${k}" ${k === g ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><button type="button" data-qmok="1">確定合併</button>`;
+    return; }
+  if (b.dataset.qmok){
+    const k = +card.querySelector('.qmsel').value, tn = S.people[k].name;
+    quizImport(it, k); await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz();
+    $('quizMsg').textContent = `已把 ${quizNorm(it).name} 的問卷合併到「${tn}」，跟進也排好了。`; return; }
+  if (b.dataset.qun){
+    if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次移出'; msg.textContent = '問卷會留著，只把名單裡這筆問卷紀錄拿掉（只有這筆紀錄的人會整個移出）。'; return; }
+    const r = quizUnlink(it); await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz();
+    $('quizMsg').textContent = r === 'person' ? `已把 ${quizNorm(it).name} 移出名單。` : r === 'log' ? '已拿掉名單裡這筆問卷紀錄。' : '名單裡找不到這筆。'; return; }
   if (b.dataset.qcp === 'op'){ copyText(card.querySelector('.op').textContent); msg.textContent = '已複製。'; return; }
   if (b.dataset.qcp === 'all'){
     const n = quizNorm(it);
@@ -1597,6 +1626,7 @@ function openSheet(i){
   pEdit = i; draft = i>=0 ? {...S.people[i]} : {status:PC.status[0], side:'未定'};
   $('pTitle').textContent = i>=0 ? '編輯聯絡人' : '新增聯絡人';
   $('pDel').hidden = i<0; $('pDel').textContent = '刪除';
+  $('pMerge').hidden = i<0 || VIEW || S.people.length < 2; $('pMergeBox').innerHTML = '';
   for (const id in P_TEXT){ $(id).value = draft[P_TEXT[id]] ?? ''; $(id).disabled = VIEW; if (VIEW && 'placeholder' in $(id)) $(id).placeholder = ''; }
   if (VIEW) $('pTitle').textContent = '聯絡人資料';
   $('pRaw').value = ''; $('pAiMsg').textContent = '';
@@ -1784,6 +1814,25 @@ $('pForm').addEventListener('submit', e => { e.preventDefault(); if (VIEW) retur
 $('pDel').addEventListener('click', e => { if (VIEW) return; const b = e.currentTarget;
   if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次刪除'; return; }
   delete b.dataset.sure; S.people.splice(pEdit,1); save(); closeSheet(); renderPeople(); });
+/* 合併重複的人：把現在這位（例如用小名填問卷的）併進另一位，紀錄、跟進、備註都搬過去，空白欄位補上，然後刪掉這位 */
+$('pMerge').addEventListener('click', () => { if (VIEW || pEdit < 0) return;
+  const box = $('pMergeBox'); if (box.innerHTML){ box.innerHTML = ''; return; }
+  box.innerHTML = `<select id="pMergeTo">${S.people.map((p, k) => k === pEdit ? '' : `<option value="${k}">${esc(p.name)}</option>`).join('')}</select><button type="button" id="pMergeOk">確定合併</button>`;
+  $('pMergeOk').addEventListener('click', () => {
+    keepPerson();
+    const to = +$('pMergeTo').value, a = S.people[pEdit], t = S.people[to];
+    if (!confirm(`把「${a.name}」合併到「${t.name}」？\n紀錄、跟進、備註會搬過去，「${a.name}」這張會刪掉。`)) return;
+    for (const k in a){ if (!['name','log','fu','note','alias'].includes(k) && (t[k] == null || t[k] === '' || t[k] === '未定' || t[k] === PC.status[0]) && a[k]) t[k] = a[k]; }
+    t.log = (t.log || []).concat(a.log || []).sort((x, y) => x.d < y.d ? -1 : 1);
+    t.fu = (t.fu || []).concat(a.fu || []);
+    t.note = [t.note, a.note].filter(Boolean).join('\n');
+    t.alias = [...new Set((t.alias || []).concat(a.alias || [], a.name !== t.name ? [a.name] : []))];
+    S.people.splice(pEdit, 1);
+    const ni = S.people.indexOf(t);
+    save(); render(); renderQuiz(); openSheet(ni);
+    $('fMsg').textContent = `已把「${a.name}」合併進來。`;
+  });
+});
 
 
 /* ===== 商機：基本功影片（檔案放在 public/v/）===== */
