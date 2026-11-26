@@ -367,6 +367,8 @@ body.view #tasks .tt{border-bottom-color:transparent}
 .airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .airow button:disabled{opacity:.6}
+.wcount small{display:block;color:var(--ink-soft);font-size:12px;font-weight:400}
+.wcount .box{cursor:default}
 /* 問卷專區：主要動作綠色，其餘白底；連結按鈕不要底線 */
 a.addbtn{text-decoration:none;display:inline-block}
 #quizCard .airow button{background:#FFFDF4;color:var(--ink);font-size:14px;padding:5px 14px}
@@ -665,6 +667,11 @@ const CONFIG = {
     ],
   },
   phases: [[1,2,'準備與邀約'],[3,5,'雙邊親推・擴展業務'],[6,9,'衝階晉升'],[10,11,'備用與確認'],[12,18,'營養挑戰獎收尾']],
+  /* ↓↓↓ 每週自動計數：從名單的接觸紀錄自動算，達到數量就算完成（會算進週進度）↓↓↓
+     label＝顯示名稱，n＝每週目標數，types＝名單「做了什麼」裡哪些算數 */
+  weekCount: [
+    {label:'會面', n:2, types:['二對一會面','見面聊天','聽 UBP','上 B5']},
+  ],
   /* 每週里程碑（顯示在週目標頁） */
   weekTarget: ['左邊 BV 400','左邊 BV 600','左邊 BV 900','左邊 BV 1,100','過 1,200 階・助理級','左邊 BV 2,000','過 2,400 階','過 3,600 階','過 5,000 階・經理級','備用週','2/5 截止',
     '營養 BV 2,000','營養 BV 2,300','營養 BV 2,700','營養 BV 3,000','五項條件確認','整理文件','3/31 提交'],
@@ -763,7 +770,7 @@ const CONFIG = {
   ],
   /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
   follow: {
-    types: ['分享產品','健康問卷','60秒問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
+    types: ['分享產品','健康問卷','60秒問卷','分享商機','二對一會面','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
     results: ['有興趣','考慮中','下次再約','沒興趣','未接／未回','已購買','已加入'],
     byType: {
       '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
@@ -798,6 +805,7 @@ const CONFIG = {
         [13,'第三次跟進：檢視名單、陪打電話','檢視名單（目標至少 60 位）；陪他打電話；讓他展示「兩到三年計畫」'],
         [21,'第四次跟進：讓他主導展示','讓他主導一段事業計畫；陪他完成居家購物清單；確認已買下次 GMTSS 門票'],
       ],
+      '二對一會面': [[2,'跟進二對一：問感想、約下一步','聊聊會面後的想法、解答疑問；依興趣約 UBP、試用產品或下一次會面']],
       '上 B5':    [[3,'討論加入與目標設定'],[7,'約一次一對一規劃']],
       '電話關心': [[7,'再關心一次近況']],
       '見面聊天': [[3,'跟進見面聊到的事']],
@@ -1105,9 +1113,16 @@ const peek = dayRec;
 /* 先把未來兩週的每日任務準備好，LINE 提醒才讀得到 */
 const warmDays = () => { for (let i = 0; i < 14; i++){ const d = add(TODAY, i); if (d <= END) dayRec(d); } };
 const dayPct = d => { const t = peek(d).tasks; return t.length ? t.filter(x=>x.d).length / t.length : 0; };
+/* 週自動計數：這週（到今天為止）名單上記錄的接觸，符合 types 的有幾筆 */
+const weekCounts = w => (CONFIG.weekCount || []).map(c => {
+  const s0 = key(w.s), e0 = key(w.e) < tk() ? key(w.e) : tk();
+  const got = (S.people || []).reduce((n, p) => n + (p.log || []).filter(l => l.d >= s0 && l.d <= e0 && c.types.includes(l.type)).length, 0);
+  return {...c, got};
+});
 const weekPct = w => {
   const a = S.weeks[w.n] || [];
   let done = w.acts.filter((_,i)=>a[i]).length, all = w.acts.length;
+  weekCounts(w).forEach(c => { all++; if (c.got >= c.n) done++; });
   w.days.forEach(d => { const t = peek(d).tasks; all += t.length; done += t.filter(x=>x.d).length; });
   return all ? done/all : 0;
 };
@@ -1216,7 +1231,9 @@ function render(){
   $('weekBv').textContent = selWeek.bv;
   const wa = S.weeks[selWeek.n] || [];
   $('weekActions').innerHTML = selWeek.acts.map((a,i) =>
-    `<div class="chk ${wa[i]?'on':''}"><button class="box ${wa[i]?'on':''}" data-a="${i}" role="checkbox" aria-checked="${!!wa[i]}" aria-label="${esc(a)}">${PAW}</button><span class="txt">${esc(a)}</span></div>`).join('');
+    `<div class="chk ${wa[i]?'on':''}"><button class="box ${wa[i]?'on':''}" data-a="${i}" role="checkbox" aria-checked="${!!wa[i]}" aria-label="${esc(a)}">${PAW}</button><span class="txt">${esc(a)}</span></div>`).join('')
+    + weekCounts(selWeek).map(c => { const ok = c.got >= c.n;
+      return `<div class="chk wcount ${ok?'on':''}"><span class="box ${ok?'on':''}" aria-hidden="true">${PAW}</span><span class="txt">本週${esc(c.label)} ${c.n} 次　<b class="num">${c.got} / ${c.n}</b><small>從名單自動計算：${esc(c.types.join('、'))}</small></span></div>`; }).join('');
 
   /* --- 日 --- */
   $('days').innerHTML = selWeek.days.map(d =>
@@ -1603,7 +1620,7 @@ function drawTl(){
       <span class="fx"><button type="button" data-fd="${x.i}">${f.done?'復原':'完成'}</button><button type="button" data-fdd="${x.i}">改日期</button><button type="button" data-fx="${x.i}">刪除</button></span></li>`; }).join('')
     : '<li class="fu" style="list-style:none"><small>還沒有紀錄。上面記一次接觸，系統會幫你排好接下來什麼時候跟進。</small></li>';
 }
-function keepPerson(){ if (VIEW) return; if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); renderPeople(); } }
+function keepPerson(){ if (VIEW) return; if (pEdit >= 0){ S.people[pEdit].log = draft.log; S.people[pEdit].fu = draft.fu; S.people[pEdit].status = draft.status; save(); render(); } }   /* render：週目標的自動計數也一起更新 */
 $('fAdd').addEventListener('click', () => { if (VIEW) return;
   const log = {d: $('fDate').value || tk(), type: $('fType').value, result: $('fResult').value, product: $('fProd').value.trim(), note: $('fNote').value.trim()};
   draft.log = (draft.log || []).concat(log);
