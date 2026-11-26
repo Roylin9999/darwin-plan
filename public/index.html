@@ -55,7 +55,7 @@ h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
 @media (min-width:900px){.wrap{padding-top:26px}}
 [hidden]{display:none!important}
 .page{display:grid;gap:16px;min-width:0}
-@media (min-width:820px){.page.two{grid-template-columns:1fr 1fr;align-items:start}}
+@media (min-width:820px){.page.two{grid-template-columns:1fr 1fr;align-items:start}.page.two .total{grid-column:1/-1}}   /* 總進度橫跨整排，下面兩張並排，不留空洞 */
 
 /* 三層進度：每一頁都看得到 */
 .glance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
