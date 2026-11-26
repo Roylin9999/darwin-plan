@@ -360,13 +360,19 @@ body.view #tasks .tt{border-bottom-color:transparent}
 .qz .adv{background:var(--green-soft);border:2px solid var(--ink);border-radius:12px;padding:10px;margin-top:10px;font-size:14px}
 .qz .adv p{margin:4px 0}
 .qz .adv .op{background:#fff;border-radius:10px;padding:8px;white-space:pre-wrap}
-.pmore{{display:block;width:100%;margin-top:10px;border:2.5px dashed var(--ink);border-radius:14px;background:#FFFDF4;padding:10px;font:inherit;font-weight:700;cursor:pointer}
+.pmore{display:block;width:100%;margin-top:10px;border:2.5px dashed var(--ink);border-radius:14px;background:#FFFDF4;padding:10px;font:inherit;font-weight:700;cursor:pointer}
 .aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
 .aifill label{display:block;font-weight:700;margin-bottom:6px}
 .aifill textarea{width:100%;min-height:90px;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:10px 12px;font:inherit;color:var(--ink)}
 .airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .airow button:disabled{opacity:.6}
+/* 問卷專區：主要動作綠色，其餘白底；連結按鈕不要底線 */
+a.addbtn{text-decoration:none;display:inline-block}
+#quizCard .airow button{background:#FFFDF4;color:var(--ink);font-size:14px;padding:5px 14px}
+#quizCard .airow button[data-qai],#quizCard .airow button[data-qp],#quizCard .airow button[data-qadd]{background:var(--green);color:#fff}
+#quizCard .airow button.qdel{background:#fff;color:#B5473A;box-shadow:0 3px 0 #B5473A;border-color:#B5473A;margin-left:auto}
+#quizMsg,.qmsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
 #pAiMsg,#noteAiMsg{font-size:13px;font-weight:700;color:var(--ink-soft)}
 .notePlan{margin-top:10px;background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px}
 .notePlan h4{margin:0 0 6px;font-size:14px}
