@@ -343,6 +343,24 @@ body.view #tasks .tt{border-bottom-color:transparent}
 #pForm .sheet-act{flex-wrap:wrap}
 .copybtn{flex:1 1 100%;order:-1;min-height:46px;border:2.5px solid var(--ink);border-radius:14px;background:var(--sky);font:inherit;font-weight:700;padding:8px 14px;cursor:pointer;box-shadow:0 4px 0 var(--ink)}
 /* 名單：AI 幫忙填表 */
+.qlist{display:grid;gap:10px;margin-top:12px}
+.qz{border:2.5px solid var(--ink);border-radius:16px;background:#FFFDF4;padding:10px 12px}
+.qz summary{cursor:pointer;list-style:none;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center}
+.qz summary::-webkit-details-marker{display:none}
+.qz summary b{font-size:16px}
+.qz summary small{grid-column:1/-1;color:var(--ink-soft);font-size:12px}
+.qz .tag{font-size:12px;font-weight:700;border:2px solid var(--ink);border-radius:999px;padding:1px 10px;background:var(--green-soft);white-space:nowrap}
+.qz .tag.new{background:var(--orange-soft)}
+.qz h4{margin:12px 0 4px;font-size:14px}
+.qz .rec{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:4px 0;border-bottom:1px dashed #d9cdb8}
+.qz .rec a{color:inherit;font-weight:700}
+.qz dl{margin:0;font-size:13px;display:grid;grid-template-columns:auto 1fr;gap:3px 10px}
+.qz dt{color:var(--ink-soft)} .qz dd{margin:0}
+.airow button.qdel{background:#fff;color:#B5473A;box-shadow:0 3px 0 #B5473A;border-color:#B5473A}
+.qz .adv{background:var(--green-soft);border:2px solid var(--ink);border-radius:12px;padding:10px;margin-top:10px;font-size:14px}
+.qz .adv p{margin:4px 0}
+.qz .adv .op{background:#fff;border-radius:10px;padding:8px;white-space:pre-wrap}
+.pmore{{display:block;width:100%;margin-top:10px;border:2.5px dashed var(--ink);border-radius:14px;background:#FFFDF4;padding:10px;font:inherit;font-weight:700;cursor:pointer}
 .aifill{background:var(--green-soft);border:2.5px solid var(--ink);border-radius:16px;padding:12px;margin:4px 0 6px}
 .aifill label{display:block;font-weight:700;margin-bottom:6px}
 .aifill textarea{width:100%;min-height:90px;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:14px;background:#FFFDF4;padding:10px 12px;font:inherit;color:var(--ink)}
@@ -447,6 +465,13 @@ body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
       <div class="ai" id="aiList"><img src="img/cat-read.png" alt="">
         <div><div class="who">達爾文說</div><p id="aiListText"></p></div></div>
       <div class="plist" id="pList"></div>
+    </section>
+    <section class="card" aria-label="60 秒問卷專區" id="quizCard">
+      <div class="sec-head"><h2>60 秒問卷</h2><a class="addbtn" id="quizOpen" href="https://health-quiz.wellstoryhall.com/?s=ygrekhuang" target="_blank" rel="noopener">開問卷</a></div>
+      <p class="share-hint" style="text-align:left;margin:6px 0 0">顧客填完會自動加進名單、排好第 3／7／14／21 天的跟進。點開一位可以看作答、推薦產品和達爾文的跟進建議。</p>
+      <div class="airow"><button type="button" id="quizLoad">重新整理</button><button type="button" id="quizLink">複製問卷連結</button><span id="quizMsg"></span></div>
+      <div class="qlist" id="qList"></div>
+      <button type="button" class="pmore" id="qMore" hidden></button>
     </section>
   </div>
   <div class="page two" data-page="goal" hidden>
@@ -732,7 +757,7 @@ const CONFIG = {
   ],
   /* ↓↓↓ 名單的跟進規則：記錄一次接觸後，自動排出接下來的跟進。[幾天後, 要做什麼] ↓↓↓ */
   follow: {
-    types: ['分享產品','健康問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
+    types: ['分享產品','健康問卷','60秒問卷','分享商機','邀約 UBP','聽 UBP','邀約 B5','上 B5','電話關心','見面聊天','傳 LINE'],
     results: ['有興趣','考慮中','下次再約','沒興趣','未接／未回','已購買','已加入'],
     byType: {
       '分享產品': [[2,'關心產品使用感受'],[7,'問回購，或分享另一個產品']],
@@ -742,6 +767,14 @@ const CONFIG = {
         [6,'第 7 天體驗回饋：問感受、分享見證','問有沒有感覺到好處；分享這個產品的見證或顧客評價；鼓勵持續使用，提醒產品需要時間發揮效果'],
         [13,'第 14 天持續追蹤：確認持續使用','確認還在正確、持續地使用；再問一次體驗；分享近期的文章、影片或見證，保持互動'],
         [20,'第 21 天回購與擴展：問回購、推薦新產品、問轉介紹','問要不要再訂購（回購時機）；推薦其他產品、增加購物類別；分享文章、影片或見證；問有沒有朋友也適合（轉介紹）'],
+      ],
+      /* 60 秒問卷：顧客自己線上填的，不代表已經購買 → 軟性跟進：分享資訊、邀請講座，不以購買為前提 */
+      '60秒問卷': [
+        [1,'第 2 天：謝謝填問卷、幫他看懂結果','謝謝他花時間填問卷；用一兩句話說明他的保養重點；問「這個結果跟你自己的感覺像嗎？」；先不推產品'],
+        [4,'第 5 天：分享一則相關的健康知識','依他在意的重點（睡眠、消化、體重…）分享一篇文章或短影片，附一句自己的心得；不提購買'],
+        [9,'第 10 天：分享見證或生活小撇步','分享一個跟他狀況相近的使用心得，或飲食、作息小撇步；問他最近狀況怎麼樣'],
+        [15,'第 16 天：邀請參加講座或線上分享會','邀請他來聽產品講座、健康講座或線上分享會（給兩個時段讓他選）；可以帶朋友一起'],
+        [29,'第 30 天：關心近況、問要不要試試看','關心近況；如果他對推薦的產品有興趣，再介紹試用方式；沒興趣就保持關係，之後節日問候'],
       ],
       /* ABC 跟進法：分享當天＝第 1 天，30–90 天試做，不急著要對方加入；每一次都要約好下一次 */
       '分享商機': [
@@ -772,6 +805,7 @@ const CONFIG = {
     },
     /* 當天就要做的事：記錄這類接觸時提醒你 */
     today: {
+      '60秒問卷': '顧客自己在線上填的問卷，不代表已經購買。先謝謝他、幫他看懂結果，之後用分享資訊、邀請講座慢慢建立信任，不要直接推銷。',
       '健康問卷': '今天記得：跟對方一起看結果、挑 2–4 款產品、存好推薦，並約好下次跟進的時間。',
       '分享商機': '今天記得：用評估法接觸，讓對方「評估」不是「加入」。興趣中至高→約三方通話或會面（二對一、HBP、UBP）；興趣不大→用影片取得推薦人選，或介紹夥伴商店。一定要約好下次跟進，而且排在兩三天內。',
     },
@@ -850,7 +884,7 @@ const save = () => {
 };
 
 /* ---------- 雲端同步（部署到 Cloudflare 後自動啟用；在預覽頁會安靜略過） ---------- */
-let CLOUD = false, pushTimer = null;
+let CLOUD = false, pushTimer = null, QOK = false;   /* QOK：通關碼正確、可以看問卷 */
 const codeGet = () => { try { return localStorage.getItem('darwin-code') || ''; } catch(e){ return ''; } };
 const api = (path, opt = {}) => fetch('api/' + path, {...opt, headers: {'content-type':'application/json', 'x-code': codeGet()}});
 function cloudPush(){
@@ -880,7 +914,7 @@ async function cloudPull(){
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){}
     warmDays(); render(); darwin('hello'); darwin('listHello', {}, 'List');
   } else if (S.updated) cloudPush();
-  document.getElementById('codeBg').hidden = true; cloudUI(); showQuota(); return true;
+  document.getElementById('codeBg').hidden = true; QOK = true; cloudUI(); showQuota(); loadQuiz(true); return true;
 }
 const viewPref = v => { try { if (v === true) localStorage.setItem('darwin-view', '1'); else if (v === false) localStorage.removeItem('darwin-view'); return localStorage.getItem('darwin-view') === '1'; } catch(e){ return false; } };
 async function enterView(){
@@ -904,6 +938,157 @@ async function cloudInit(){
     if (location.hash === '#view' || (!codeGet() && viewPref())) return enterView();   // 網址加 #view 就直接進檢視模式
     if (!codeGet()) document.getElementById('codeBg').hidden = false; else await cloudPull();
   } catch(e){ /* 沒有後端：維持單機模式 */ }
+}
+
+/* ===== 60 秒問卷：顧客結果加進名單（收件匣推過來的、或問卷專區讀到的都走這裡，同一筆只加一次） ===== */
+const QZ_TYPE = '60秒問卷', QZ_TYPES = ['60秒問卷','健康問卷'];   /* 舊的問卷紀錄是「健康問卷」 */
+const QZ_AGE = '你的年齡層是？', QZ_SYM = '最近有感覺到以下哪些變化？';
+const arr = v => v == null || v === '' ? [] : [].concat(v);
+function quizNorm(it){
+  const a = it.answers || {};
+  return { id: it.id, name: String(it.name || '').trim(),
+    date: it.date || key(new Date(it.at || Date.now())),
+    age: it.age || arr(a[QZ_AGE])[0] || '', focus: it.focus || [],
+    symptoms: it.symptoms || arr(a[QZ_SYM]),
+    products: it.products || (it.recs || []).map(r => r.name) };
+}
+function quizImport(raw){
+  const it = quizNorm(raw); if (!it.name) return null;
+  S.quizDone = S.quizDone || [];
+  if (it.id && S.quizDone.includes(it.id)) return null;
+  let p = S.people.find(x => x.name === it.name);
+  const dup = p && (p.log || []).some(l => QZ_TYPES.includes(l.type) && l.d === it.date);
+  if (!dup){
+    if (!p){ p = {name: it.name, side:'未定', status: PC.status[0], health:'想調整', note:''}; S.people.unshift(p); }
+    const bits = [it.focus.length ? '在意：' + it.focus.join('、') : '', it.symptoms.length ? '狀況：' + it.symptoms.join('、') : ''].filter(Boolean).join('；');
+    const memo = md(new Date(it.date + 'T00:00')) + ' 60秒問卷' + (bits ? '：' + bits : '');
+    p.note = p.note ? p.note + '\n' + memo : memo;
+    if (it.age && !p.age && /^\d+$/.test(it.age)) p.age = it.age;
+    const log = {d: it.date, type: QZ_TYPE, result:'', product: it.products.join('、'), note: bits ? '60秒問卷 ' + bits : '60秒問卷'};
+    p.log = (p.log || []).concat(log); planFollow(p, log);
+  }
+  if (it.id){ S.quizDone.push(it.id); if (S.quizDone.length > 600) S.quizDone = S.quizDone.slice(-600); }
+  return dup ? null : p;
+}
+/* 刪除問卷時，把名單裡對應的紀錄拿掉：這個人只有這筆問卷 → 整個人刪掉；還有別的紀錄 → 只刪問卷那筆和它排的跟進 */
+function quizUnlink(raw){
+  const it = quizNorm(raw), pi = S.people.findIndex(x => x.name === it.name); if (pi < 0) return '';
+  const p = S.people[pi], logs = p.log || [];
+  const li = logs.findIndex(l => QZ_TYPES.includes(l.type) && l.d === it.date); if (li < 0) return '';
+  if (logs.length === 1){ S.people.splice(pi, 1); return 'person'; }
+  logs.splice(li, 1);
+  const day = md(new Date(it.date + 'T00:00'));
+  p.note = String(p.note || '').split('\n').filter(x => !x.startsWith(day + ' 健康問卷') && !x.startsWith(day + ' 60秒問卷')).join('\n');
+  /* 問卷排的跟進在問卷日之後、還沒完成；如果之後沒有更新的紀錄，就一起拿掉 */
+  const later = logs.some(l => l.d >= it.date);
+  if (!later) p.fu = (p.fu || []).filter(f => f.done || f.d <= it.date);
+  return 'log';
+}
+/* 之前自動加進名單的問卷是用「健康問卷」（以購買為前提）排跟進，改成 60 秒問卷的軟性跟進（只做一次） */
+function quizSoften(){
+  if (S.quizSoft) return 0;
+  let n = 0;
+  QZ.forEach(raw => { const it = quizNorm(raw), p = S.people.find(x => x.name === it.name); if (!p) return;
+    const logs = p.log || [], l = logs.find(x => x.type === '健康問卷' && x.d === it.date && /^健康問卷/.test(x.note || '') && !x.result);
+    if (!l) return;
+    l.type = QZ_TYPE; l.note = l.note.replace(/^健康問卷/, '60秒問卷');
+    p.note = String(p.note || '').replace(md(new Date(it.date + 'T00:00')) + ' 健康問卷', md(new Date(it.date + 'T00:00')) + ' 60秒問卷');
+    if (logs.every(x => x === l || x.d < l.d)) planFollow(p, l);   /* 之後沒有新的接觸，才重排跟進 */
+    n++; });
+  S.quizSoft = 1; if (n){ render(); renderPeople(); }
+  return n || 1;
+}
+async function pushNow(){
+  save(); clearTimeout(pushTimer);
+  const r = await api('state', {method:'PUT', body: JSON.stringify({data:S, updated:S.updated})});
+  return r.ok;
+}
+/* 60 秒問卷專區 */
+let QZ = [], qzAt = 0, qzOpen = false;
+const QZ_SHOW = 5;   /* ← 問卷收合時顯示幾份，可以改 */
+const fmtAt = t => { const d = new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+function advHtml(a){
+  if (!a) return '';
+  return `<div class="adv"><p><b>達爾文的觀察：</b>${esc(a.summary || '')}</p>
+    ${a.product ? `<p><b>可以先分享：</b>${esc(typeof a.product === 'string' ? a.product : [a.product.name, a.product.reason].filter(Boolean).join('－'))}</p>` : ''}
+    ${(a.points || []).length ? `<p><b>可以問：</b></p><ul style="margin:0;padding-left:20px">${a.points.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${a.opener ? `<p><b>LINE 開場白：</b></p><div class="op">${esc(a.opener)}</div><div class="airow"><button type="button" data-qcp="op">複製開場白</button></div>` : ''}</div>`;
+}
+function renderQuiz(){
+  const box = $('qList'); if (!box) return;
+  if (!QOK){ box.innerHTML = '<p class="share-hint" style="text-align:left">問卷內容有顧客的健康資料，輸入通關碼後才看得到。</p>'; return; }
+  if (!QZ.length){ box.innerHTML = '<p class="share-hint" style="text-align:left">還沒有顧客填問卷。</p>'; return; }
+  const adv = S.quizAi || {};
+  const qm = $('qMore'); qm.hidden = QZ.length <= QZ_SHOW;
+  qm.textContent = qzOpen ? '收合問卷 ▲' : `顯示全部 ${QZ.length} 份 ▼`;
+  box.innerHTML = (qzOpen ? QZ : QZ.slice(0, QZ_SHOW)).map((it, i) => {
+    const n = quizNorm(it), pi = S.people.findIndex(p => p.name === n.name), p = S.people[pi];
+    const nf = p ? fuOpen(p)[0] : null;
+    const ans = Object.entries(it.answers || {}).map(([k, v]) => `<dt>${esc(k.replace(/[？?]$/, ''))}</dt><dd>${esc(arr(v).join('、'))}</dd>`).join('');
+    const recs = (it.recs || []).map(r => `<div class="rec">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.name)}</a>` : `<span>${esc(r.name)}</span>`}<span>符合 ${+r.match || 0}%</span></div>`).join('');
+    return `<details class="qz" data-qi="${i}"><summary><b>${esc(n.name)}</b><span class="tag ${p ? '' : 'new'}">${p ? (nf ? '下次跟進 ' + md(new Date(nf.d + 'T00:00')) : '已在名單') : '未加入名單'}</span>
+      <small>${fmtAt(it.at)}${n.age ? '・' + esc(n.age) : ''}${n.focus.length ? '・在意：' + esc(n.focus.join('、')) : ''}</small></summary>
+      ${recs ? `<h4>推薦產品</h4>${recs}` : ''}
+      ${ans ? `<h4>作答內容</h4><dl>${ans}</dl>` : ''}
+      <div class="airow">${p ? `<button type="button" data-qp="${pi}">打開名單</button>` : `<button type="button" data-qadd="${i}">加進名單</button>`}
+        <button type="button" data-qai="${i}">${adv[it.id] ? '重寫跟進建議' : 'AI 跟進建議'}</button><button type="button" data-qcp="all">複製結果</button><button type="button" class="qdel" data-qdel="1">刪除</button><span class="qmsg"></span></div>
+      <div class="qadv">${advHtml(adv[it.id])}</div></details>`;
+  }).join('');
+}
+async function loadQuiz(force){
+  if (!QOK || !CLOUD){ renderQuiz(); return; }
+  if (!force && Date.now() - qzAt < 60000) return;
+  qzAt = Date.now(); $('quizMsg').textContent = '讀取中…';
+  try {
+    const j = await (await api('quiz')).json();
+    if (j.error){ $('quizMsg').textContent = j.error; return; }
+    QZ = j.items || [];
+    const before = (S.quizDone || []).length, soft = quizSoften();
+    const added = QZ.slice().reverse().map(quizImport).filter(Boolean).length;   /* 舊的先加，名單上新的在前面 */
+    if ((S.quizDone || []).length !== before || soft) await pushNow().catch(() => {});
+    if (added){ render(); renderPeople(); }
+    $('quizMsg').textContent = `共 ${QZ.length} 份` + (added ? `，新加進名單 ${added} 位` : '');
+  } catch(e){ $('quizMsg').textContent = '連線失敗，請稍後再試。'; }
+  renderQuiz();
+}
+function quizBind(){
+$('quizLoad').addEventListener('click', () => loadQuiz(true));
+$('qMore').addEventListener('click', () => { qzOpen = !qzOpen; renderQuiz(); });
+$('quizLink').addEventListener('click', () => { copyText($('quizOpen').href); $('quizMsg').textContent = '已複製問卷連結。'; });
+$('qList').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const card = b.closest('.qz'), it = QZ[+card.dataset.qi], msg = card.querySelector('.qmsg');
+  if (b.dataset.qp){ setTab('list'); openSheet(+b.dataset.qp); return; }
+  if (b.dataset.qdel){
+    if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次刪除'; msg.textContent = '名單裡這筆問卷的紀錄也會一起刪掉。'; return; }
+    b.disabled = true; msg.textContent = '刪除中…';
+    try {
+      const j = await (await api('quiz/' + encodeURIComponent(it.id), {method:'DELETE'})).json();
+      if (j.error){ msg.textContent = j.error; b.disabled = false; return; }
+      const r = quizUnlink(it);
+      if (S.quizAi) delete S.quizAi[it.id];
+      QZ = QZ.filter(x => x !== it);
+      await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz();
+      $('quizMsg').textContent = `已刪除 ${quizNorm(it).name} 的問卷` + (r === 'person' ? '，名單裡的這個人也一起刪除了。' : r === 'log' ? '；名單裡這個人還有其他紀錄，所以只刪掉問卷那一筆。' : '。');
+    } catch(_){ msg.textContent = '連線失敗，請稍後再試。'; b.disabled = false; }
+    return; }
+  if (b.dataset.qadd){ quizImport({...it, id: ''}); S.quizDone = (S.quizDone || []).concat(it.id); await pushNow().catch(() => {}); render(); renderPeople(); renderQuiz(); return; }
+  if (b.dataset.qcp === 'op'){ copyText(card.querySelector('.op').textContent); msg.textContent = '已複製。'; return; }
+  if (b.dataset.qcp === 'all'){
+    const n = quizNorm(it);
+    const t = [`【60 秒問卷】${n.name}（${fmtAt(it.at)}）`, n.focus.length ? '保養重點：' + n.focus.join('、') : '',
+      ...(it.recs || []).map((r, k) => `推薦 ${k+1}：${r.name}（符合 ${r.match}%）`),
+      ...Object.entries(it.answers || {}).map(([k, v]) => `${k.replace(/[？?]$/, '')}：${arr(v).join('、')}`)].filter(Boolean).join('\n');
+    copyText(t); msg.textContent = '已複製。'; return; }
+  if (b.dataset.qai){
+    b.disabled = true; msg.textContent = '達爾文想一下，最多等 1 分鐘…';
+    try {
+      const j = await (await api('ai/quiz', {method:'POST', body: JSON.stringify({item: it})})).json();
+      if (j.error) msg.textContent = j.error;
+      else { S.quizAi = S.quizAi || {}; S.quizAi[it.id] = j.advice; await pushNow().catch(() => {}); card.querySelector('.qadv').innerHTML = advHtml(j.advice); msg.textContent = ''; b.textContent = '重寫跟進建議'; }
+    } catch(_){ msg.textContent = '連線失敗，請稍後再試。'; }
+    b.disabled = false; }
+});
 }
 
 let selWeek = weekOf(TODAY), selDay = TODAY;
@@ -1617,6 +1802,7 @@ function setTab(t){
   document.querySelectorAll('.g').forEach(b => b.classList.toggle('cur', b.dataset.go===t));
   if (t!=='biz'){ const v = document.getElementById('bizVid'); if (v && !v.paused) v.pause(); }
   if (t==='biz') bizInit();
+  if (t==='list') loadQuiz();
   if (t==='day'){ fitTasks(); if (VIEW) document.querySelectorAll('#tasks textarea').forEach(x => x.readOnly = true); }
   if (t==='week'){ const c = document.querySelector('.wk.sel'); if (c) c.parentNode.scrollLeft = c.offsetLeft - c.parentNode.offsetLeft - 60; }
 }
@@ -1637,6 +1823,7 @@ $('aiTest').addEventListener('click', async e => { const b = e.currentTarget; b.
 $('toView').addEventListener('click', () => { enterView().catch(() => { $('codeErr').textContent = '連線失敗，請稍後再試。'; }); });
 $('toEdit').addEventListener('click', () => { $('codeErr').textContent = ''; $('codeBg').hidden = false; });
 $('codeBg').addEventListener('click', e => { if (e.target.id === 'codeBg' && VIEW) $('codeBg').hidden = true; });
+quizBind();
 warmDays();
 applyMode();
 render();

@@ -13,6 +13,7 @@
  * 需要的綁定與密鑰（Pages → 設定）：
  *   DB                        D1 資料庫綁定
  *   ACCESS_CODE               通關碼（自己訂）
+ *   QUIZ_KEY                  60 秒問卷鑰匙（自己訂，跟健康問卷網站的 SYNC_KEY_YGREKHUANG 設成一樣）
  *   CRON_KEY                  cron-worker 呼叫用的鑰匙（自己訂）
  *   LINE_CHANNEL_SECRET       LINE Messaging API 的 Channel secret
  *   LINE_CHANNEL_ACCESS_TOKEN LINE Messaging API 的 Channel access token
@@ -385,6 +386,50 @@ export async function runCron(env) {
   return { sent: texts.filter(Boolean).length, kind, where, result, quotaLeft: quota ? quota.left : null };
 }
 
+/* ---------- 60 秒問卷專區：從健康問卷網站讀完整紀錄（服務繫結 QUIZ，需問卷鑰匙 QUIZ_KEY） ---------- */
+async function quizList(env) {
+  if (!env.QUIZ_KEY) return json({ error: '還沒設定問卷鑰匙 QUIZ_KEY（要跟健康問卷網站的 SYNC_KEY_YGREKHUANG 一樣）' });
+  const base = String(env.QUIZ_URL || 'https://health-quiz.wellstoryhall.com').replace(/\/+$/, '');
+  const go = env.QUIZ ? (u, o) => env.QUIZ.fetch(u, o) : fetch;
+  try {
+    const r = await go(base + '/api/sync/results?store=' + encodeURIComponent(env.QUIZ_STORE || 'ygrekhuang'),
+      { headers: { 'x-inbox-key': env.QUIZ_KEY }, signal: AbortSignal.timeout(10000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return json({ error: j.error || ('問卷網站回應 ' + r.status) });
+    return json({ items: j.results || [] });
+  } catch (e) { return json({ error: '連不到問卷網站：' + e.message }); }
+}
+async function quizDelete(env, id) {
+  if (!env.QUIZ_KEY) return json({ error: '還沒設定問卷鑰匙 QUIZ_KEY' });
+  if (!/^hq-[\w-]+-\d+$/.test(id)) return json({ error: '這筆問卷編號不對' }, 400);
+  const base = String(env.QUIZ_URL || 'https://health-quiz.wellstoryhall.com').replace(/\/+$/, '');
+  const go = env.QUIZ ? (u, o) => env.QUIZ.fetch(u, o) : fetch;
+  try {
+    const r = await go(base + '/api/sync/results/' + id, { method: 'DELETE', headers: { 'x-inbox-key': env.QUIZ_KEY }, signal: AbortSignal.timeout(10000) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return json({ error: j.error || ('問卷網站回應 ' + r.status) });
+    return json({ ok: true, deleted: j.deleted || 0 });
+  } catch (e) { return json({ error: '連不到問卷網站：' + e.message }); }
+}
+async function aiQuiz(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: 'AI 還沒有設定（缺 MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const it = b.item || {};
+  const text = JSON.stringify({ 姓名: it.name, 保養重點: it.focus, 推薦產品: (it.recs || []).map(r => `${r.name}（符合${r.match}%）`), 作答: it.answers }).slice(0, 4000);
+  const system = `你是美安台灣店主的跟進助手。下面是一位顧客自己在線上填完「60 秒健康選品」問卷的結果。他還沒有購買，也不一定認識產品，所以跟進要軟性：先謝謝他、幫他看懂結果，用分享健康知識、見證、邀請參加產品講座或線上分享會的方式建立信任，不要以購買為前提、不要直接推銷。請幫店主想好怎麼跟進，只輸出一個 JSON 物件，不要任何其他文字或程式碼框：
+- summary：用 1 到 2 句話說這位顧客最在意什麼、生活習慣有什麼線索
+- opener：一則可以直接貼到 LINE 的開場訊息（50 到 90 字，口語、溫暖、像朋友；謝謝他填問卷、用一句話點出他的保養重點、問一個關心的問題；不要推薦購買、不要用「親愛的」）
+- points：3 個聊天時可以問的問題或切入點（陣列，每個 25 字內；其中一個是邀請他參加產品講座或線上分享會的說法）
+- product：之後可以先分享資訊的一項產品名稱（從推薦產品裡選）和一句理由（說要分享什麼資訊，不是要他買）
+規則：全部用繁體中文；不可以說產品能治療或改善疾病，保健食品不是藥；顧客提到心跳不規則、正在用藥等狀況時，提醒先問醫師。`;
+  try {
+    const raw = await minimax(env, system, text, 3000, 60000);
+    const m = raw.replace(/```(json)?/g, '').match(/\{[\s\S]*\}/);
+    if (!m) return json({ error: 'AI 回覆看不懂，請再試一次' });
+    return json({ advice: JSON.parse(m[0]) });
+  } catch (e) { return json({ error: 'AI 沒有回應，請稍後再試' }); }
+}
+
 /* ---------- 路由 ---------- */
 export async function onRequest({ request, env, params, waitUntil }) {
   const path = [].concat(params.path || []).join('/'), method = request.method;
@@ -413,6 +458,9 @@ export async function onRequest({ request, env, params, waitUntil }) {
       if (waitUntil) waitUntil(cheer); else await cheer;
       return json({ ok: true });
     }
+    if (path === 'quiz' && method === 'GET') return quizList(env);
+    if (path.startsWith('quiz/') && method === 'DELETE') return quizDelete(env, path.slice(5));
+    if (path === 'ai/quiz' && method === 'POST') return aiQuiz(request, env);
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
     if (path === 'ai/note' && method === 'POST') return aiNote(request, env);

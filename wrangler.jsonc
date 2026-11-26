@@ -4,6 +4,8 @@
   "compatibility_date": "2025-09-01",
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "triggers": { "crons": ["*/30 * * * *"] },
+  // 60 秒問卷專區：從健康問卷網站（health-quiz）讀顧客紀錄（店舖 ygrekhuang）
+  "services": [ { "binding": "QUIZ", "service": "health-quiz" } ],
   "d1_databases": [
     {
       "binding": "DB",
