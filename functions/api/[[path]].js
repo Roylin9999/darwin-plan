@@ -292,6 +292,31 @@ async function minimax(env, system, user, maxTokens = 1000, timeoutMs = 25000) {
   return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 }
 
+/* ---------- 和達爾文聊名單：多輪對話，帶著名單資料 ---------- */
+const CHAT_RULE = '現在主人想跟你討論名單（她的人脈與跟進）。你是她最貼心的事業小幫手兼貓咪：用繁體中文、溫暖有愛地回答，但內容要具體、實用，可以直接點名名單上的人、建議下一步怎麼聯絡、怎麼開口（可以附一段可以直接傳的 LINE 訊息）、誰該優先跟進。跟進原則：用「評估」不是「推銷」，興趣中高就約二對一或 UBP，興趣不大就請他推薦人選或介紹產品，每一次都要約好下一次。只根據下面提供的名單資料說話，資料裡沒有的不要編造；不知道就問主人。回答不要太長，必要時可以用簡短條列。';
+async function aiChat(request, env) {
+  if (!env.MINIMAX_API_KEY) return json({ error: '還沒設定 MiniMax 金鑰（MINIMAX_API_KEY）' });
+  const b = await request.json();
+  const msgs = (Array.isArray(b.messages) ? b.messages : []).slice(-12)
+    .filter(m => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+    .map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) }));
+  if (!msgs.length) return json({ error: '沒有訊息' }, 400);
+  const ctx = JSON.stringify(b.context || {}).slice(0, 24000);
+  const system = (b.persona || PERSONA).replace(/兩到四句話，不說教，不用條列。?/, '') + '\n' + CHAT_RULE + '\n\n【名單與進度資料】\n' + ctx;
+  try {
+    const base = (env.MINIMAX_BASE_URL || 'https://api.minimax.cn/v1').replace(/\/+$/, '');
+    const r = await fetch(base + '/chat/completions', {
+      method: 'POST', signal: AbortSignal.timeout(60000),
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.MINIMAX_API_KEY },
+      body: JSON.stringify({ model: env.MINIMAX_MODEL || 'MiniMax-M3', messages: [{ role: 'system', content: system }, ...msgs], max_tokens: 8000 }),   // 模型會先想再答，額度要給夠
+    });
+    if (!r.ok) throw new Error(`MiniMax ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    const j = await r.json();
+    const text = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    return json({ reply: text || '喵…我剛剛恍神了，主人再問我一次好嗎？' });
+  } catch (e) { return json({ error: e.name === 'TimeoutError' ? '達爾文想太久了，再問一次看看' : e.message }); }
+}
+
 const EVENT_LABEL = { taskDone: '剛完成一件任務', taskAdd: '剛新增一件任務', bv: '剛登記今天新增的 BV', advice: '想要今天的建議', person: '剛在名單新增或更新一位聯絡人' };
 async function aiReply(request, env) {
   if (!env.MINIMAX_API_KEY) return json({ reply: null });
@@ -462,6 +487,7 @@ export async function onRequest({ request, env, params, waitUntil }) {
     if (path.startsWith('quiz/') && method === 'DELETE') return quizDelete(env, path.slice(5));
     if (path === 'ai/quiz' && method === 'POST') return aiQuiz(request, env);
     if (path === 'ai' && method === 'POST') return aiReply(request, env);
+    if (path === 'ai/chat' && method === 'POST') return aiChat(request, env);
     if (path === 'ai/person' && method === 'POST') return aiPerson(request, env);
     if (path === 'ai/note' && method === 'POST') return aiNote(request, env);
     if (path === 'ai/test' && method === 'POST') {       // 測試 MiniMax 連線，回傳成功或錯誤原因

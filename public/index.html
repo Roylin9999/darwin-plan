@@ -135,7 +135,7 @@ body.lock{overflow:hidden}
 .viewbar button{border:2.5px solid var(--ink);border-radius:999px;background:#fff;font-weight:700;font-size:13px;padding:4px 12px}
 .sheet-act .ghost{flex:1;background:#fff}
 /* 檢視模式：只能看，不能改 */
-body.view #reset, body.view .task.blank, body.view .del, body.view #aiAsk, body.view #pAdd, body.view #lineTest, body.view #aiTest, body.view #pDel, body.view #pForm .save,
+body.view #chatBox,body.view #reset, body.view .task.blank, body.view .del, body.view #aiAsk, body.view #pAdd, body.view #lineTest, body.view #aiTest, body.view #pDel, body.view #pForm .save,
 body.view .aifill, body.view .fulog, body.view #fMsg, body.view #fTl .fx{display:none!important}
 body.view .sw, body.view #lineWhere, body.view #lineAm, body.view #linePm, body.view #pForm .chip{pointer-events:none}
 body.view #tasks .tt, body.view #tasks .box, body.view #weekActions .box, body.view .paw, body.view #dayBv, body.view #dayNote, body.view #luLeft{pointer-events:none}
@@ -367,6 +367,25 @@ body.view #tasks .tt{border-bottom-color:transparent}
 .airow{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .airow button{border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:6px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
 .airow button:disabled{opacity:.6}
+/* 和達爾文聊名單 */
+.chatbox{background:#FFFDF4;border:3px solid var(--ink);border-radius:18px;padding:10px 12px;margin-top:14px}
+.chat-head{display:flex;align-items:center;gap:8px}
+.chat-head img{width:34px}
+.chat-head b{flex:1}
+.chat-head button{border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;cursor:pointer}
+.chat-log{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow-y:auto;margin:8px 0;overscroll-behavior:contain}
+.chat-log:empty{display:none}
+.msg{max-width:88%;padding:8px 11px;border-radius:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;border:2px solid var(--ink)}
+.msg.me{align-self:flex-end;background:var(--green-soft);border-bottom-right-radius:4px}
+.msg.cat{align-self:flex-start;background:var(--pink-soft);border-bottom-left-radius:4px}
+.msg.wait{opacity:.7}
+.msg .cp{display:block;margin-top:6px;border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;cursor:pointer}
+.chat-quick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chat-quick button{border:2px solid var(--ink);border-radius:999px;background:#fff;font:inherit;font-size:12px;font-weight:700;padding:2px 10px;cursor:pointer}
+.chat-in{display:flex;gap:8px;align-items:flex-end}
+.chat-in textarea{flex:1;min-width:0;resize:none;border:2.5px solid var(--ink);border-radius:14px;background:#fff;padding:8px 10px;font:inherit;font-size:15px;max-height:140px;color:var(--ink)}
+.chat-in button{flex:none;border:2.5px solid var(--ink);border-radius:999px;background:var(--green);color:#fff;font:inherit;font-weight:700;padding:8px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.chat-in button:disabled{opacity:.6}
 .qguess{margin:8px 0 0;font-size:13px;background:var(--orange-soft);border-radius:10px;padding:6px 10px}
 .qmbox,.pmerge{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 .qmbox select,.pmerge select{font:inherit;font-size:14px;border:2px solid var(--ink);border-radius:10px;padding:4px 6px;background:#fff;max-width:12em}
@@ -447,6 +466,12 @@ body.view #noteAi,body.view #notePlan,body.view #fuToday .ok{display:none}
       </div>
       <div class="ai" id="aiDay"><img src="img/cat-wave.png" alt="">
         <div><div class="who">達爾文說</div><p id="aiDayText"></p><button id="aiAsk">給我今天的建議</button></div></div>
+      <div class="chatbox" id="chatBox">
+        <div class="chat-head"><img src="img/cat-wave.png" alt=""><b>和達爾文聊名單</b><button type="button" id="chatClear">清空</button></div>
+        <div class="chat-log" id="chatLog"></div>
+        <div class="chat-quick" id="chatQuick"></div>
+        <form class="chat-in" id="chatForm"><textarea id="chatText" rows="1" placeholder="問達爾文名單的事…"></textarea><button type="submit" id="chatSend">送出</button></form>
+      </div>
       <div class="cheer" id="cheer"><img src="img/cat-belly.png" alt=""><span>今天全部完成！主人最棒了，我開心到翻肚。</span></div>
     </section>
   </div>
@@ -1182,6 +1207,7 @@ function applyMode(){
   $('chSub').textContent = '主目標・' + md(END);
 }
 function render(){
+  if (typeof chatDraw === "function" && $("chatLog")) chatDraw();
   if (LU) renderLevel();
   /* --- 總目標 --- */
   const bv = bvTotal();
@@ -1474,6 +1500,55 @@ $('luConds').addEventListener('click', e => { if (VIEW) return; const b = e.targ
   S.lu[b.dataset.lu] = S.lu[b.dataset.lu] ? 0 : 1; save(); render(); });
 $('luLeft').addEventListener('input', e => { if (VIEW) return; S.lu.left = Math.max(0, +e.target.value || 0); save(); render(); });
 $('aiAsk').addEventListener('click', () => darwin('advice'));
+
+/* ===== 和達爾文聊名單（對話存在 S.chat，最多留 CHAT_KEEP 則，手機電腦同步）===== */
+const CHAT_KEEP = 40;   // ← 對話最多保留幾則
+const CHAT_QUICK = ['今天最該跟進誰？', '幫我挑 3 位這週可以邀約 UBP 的人', '名單裡誰很久沒聯絡了？', '幫我寫一段關心的 LINE 訊息'];   // ← 快捷問題，可以改
+function chatContext(){
+  const T = tk();
+  const people = (S.people || []).slice(0, 80).map(p => {
+    const logs = (p.log || []).slice().sort((a, b) => a.d < b.d ? 1 : -1);
+    const nf = fuOpen(p)[0];
+    const o = {名字: p.name};
+    ['alias','sex','age','city','rel','job','family','fun','money','health','dream','status','side','date'].forEach(k => { const v = p[k]; if (v && (!Array.isArray(v) || v.length)) o[(P_LABEL[k] || (k === 'alias' ? '別名' : k === 'side' ? '左右邊' : k))] = Array.isArray(v) ? v.join('、') : v; });
+    if (p.note) o.備註 = String(p.note).slice(0, 160);
+    if (logs.length) o.最近接觸 = logs.slice(0, 3).map(l => [l.d, l.type, l.result, l.product, l.note].filter(Boolean).join(' ').slice(0, 120));
+    if (logs.length) o.上次接觸距今天 = Math.round((new Date(T + 'T00:00') - new Date(logs[0].d + 'T00:00')) / 864e5) + ' 天';
+    if (nf) o.下次跟進 = nf.d + ' ' + nf.t;
+    return o;
+  });
+  const w = weekOf(TODAY);
+  return {今天: T, 本週: w ? `第 ${w.n} 週・${w.phase}・里程碑 ${w.bv}` : '', 本週目標: w ? w.acts : [], 今天要跟進: dueList().map(x => `${x.p.name}：${x.f.t}`), 名單人數: (S.people || []).length, 名單: people};
+}
+function chatDraw(){
+  const log = $('chatLog'), C = S.chat || [];
+  log.innerHTML = C.map((m, i) => `<div class="msg ${m.role === 'user' ? 'me' : 'cat'}">${m.role === 'user' ? esc(m.content) : esc(m.content).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}${m.role === 'assistant' ? `<button type="button" class="cp" data-cp="${i}">複製</button>` : ''}</div>`).join('');
+  $('chatQuick').innerHTML = C.length ? '' : CHAT_QUICK.map(q => `<button type="button">${esc(q)}</button>`).join('');
+  log.scrollTop = log.scrollHeight;
+}
+async function chatSend(text){
+  text = String(text || '').trim(); if (!text) return;
+  S.chat = (S.chat || []).concat({role:'user', content:text}).slice(-CHAT_KEEP);
+  $('chatText').value = ''; $('chatText').style.height = 'auto'; chatDraw();
+  const log = $('chatLog'); log.insertAdjacentHTML('beforeend', '<div class="msg cat wait">達爾文想一下喵…</div>'); log.scrollTop = log.scrollHeight;
+  $('chatSend').disabled = true;
+  let reply;
+  try {
+    const j = await (await api('ai/chat', {method:'POST', body: JSON.stringify({messages: S.chat, context: chatContext(), persona: CONFIG.ai.persona})})).json();
+    reply = j.reply || ('喵…' + (j.error === 'code' ? '要先輸入通關碼才能聊天喔。' : (j.error || '我剛剛沒聽清楚，再說一次好嗎？')));
+  } catch(_){ reply = '喵…連線好像斷了，等一下再問我一次。'; }
+  S.chat = S.chat.concat({role:'assistant', content:reply}).slice(-CHAT_KEEP);
+  $('chatSend').disabled = false; save(); chatDraw();
+}
+$('chatForm').addEventListener('submit', e => { e.preventDefault(); if (VIEW) return; chatSend($('chatText').value); });
+$('chatText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && matchMedia('(hover:hover)').matches){ e.preventDefault(); $('chatForm').requestSubmit(); } });
+$('chatText').addEventListener('input', e => { const t = e.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; });
+$('chatQuick').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { if (VIEW) return; chatSend(b.textContent); } });
+$('chatLog').addEventListener('click', e => { const b = e.target.closest('[data-cp]'); if (!b) return; copyText(S.chat[+b.dataset.cp].content.replace(/\*\*/g, '')); b.textContent = '已複製'; });
+$('chatClear').addEventListener('click', e => { if (VIEW) return; const b = e.currentTarget;
+  if (!b.dataset.sure){ b.dataset.sure = 1; b.textContent = '再按一次清空'; setTimeout(() => { delete b.dataset.sure; b.textContent = '清空'; }, 3000); return; }
+  S.chat = []; save(); chatDraw(); delete b.dataset.sure; b.textContent = '清空'; });
+chatDraw();
 
 /* ---------- 打卡分享圖 ---------- */
 const CW = 1080, CH = 1350, INK = '#4A2C1A';
